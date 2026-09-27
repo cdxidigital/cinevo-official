@@ -110,11 +110,13 @@ function Login() {
                 <button
                   key={p.providerId}
                   type="button"
-                  onClick={() =>
-                    signIn(p.providerId, {
+                  onClick={() => {
+                    void signIn(p.providerId, {
                       callbackURL: `/app${room || core ? `?${new URLSearchParams({ ...(room ? { room } : {}), ...(core ? { core } : {}) }).toString()}` : ""}`,
-                    })
-                  }
+                    }).catch((err: unknown) => {
+                      setError(err instanceof Error ? err.message : "Could not start that sign-in.");
+                    });
+                  }}
                   className="h-12 rounded-xl border border-cine-border bg-cine-elevated font-ui text-sm font-bold hover:border-cine-cyan"
                 >
                   Continue with {p.label}
@@ -160,6 +162,7 @@ function Login() {
                 className="h-12 rounded-xl border border-cine-border bg-cine-well px-4 font-ui"
               />
               {error ? <p className="text-sm text-cine-danger">{error}</p> : null}
+              <p className="text-xs text-cine-faint">Password at least 8 characters.{mode === "up" ? " Username: 3–20 letters, numbers, or underscores." : ""}</p>
               <button type="submit" disabled={pending} className="house-btn house-btn--play h-12 w-full">
                 {pending ? "Working…" : mode === "up" ? "Create account" : "Sign in"}
               </button>

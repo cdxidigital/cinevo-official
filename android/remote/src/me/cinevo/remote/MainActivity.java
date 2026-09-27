@@ -3,6 +3,8 @@ package me.cinevo.remote;
 import android.app.Activity;
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.InputType;
@@ -42,16 +44,26 @@ public class MainActivity extends Activity {
         setup.setPadding(dp(24), dp(48), dp(24), dp(24));
 
         TextView title = new TextView(this);
-        title.setText("CINEVO Remote");
+        title.setText("CINEVO");
+        title.setTypeface(Typeface.DEFAULT_BOLD);
         title.setTextColor(Color.WHITE);
-        title.setTextSize(28);
+        title.setTextSize(32);
+        title.setLetterSpacing(0.06f);
         setup.addView(title);
+
+        TextView tag = new TextView(this);
+        tag.setText("Your media. Your moment.");
+        tag.setTextColor(Color.parseColor("#55CFFF"));
+        tag.setTextSize(14);
+        tag.setPadding(0, dp(8), 0, 0);
+        setup.addView(tag);
 
         TextView help = new TextView(this);
         help.setText("Enter the address of your CINEVO house. This app sends play, pause, and seek only. The video stays on that screen.");
         help.setTextColor(Color.parseColor("#c8c8c8"));
         help.setTextSize(16);
-        help.setPadding(0, dp(12), 0, dp(16));
+        help.setLineSpacing(dp(2), 1f);
+        help.setPadding(0, dp(16), 0, dp(18));
         setup.addView(help);
 
         address = new EditText(this);
@@ -60,20 +72,33 @@ public class MainActivity extends Activity {
         address.setSingleLine(true);
         address.setTextColor(Color.WHITE);
         address.setHintTextColor(Color.parseColor("#8a8a8a"));
-        address.setBackgroundColor(Color.parseColor("#141414"));
-        address.setMinHeight(dp(52));
-        address.setPadding(dp(12), dp(8), dp(12), dp(8));
+        address.setBackground(rounded("#141414", "#2a2a2a"));
+        address.setMinHeight(dp(56));
+        address.setPadding(dp(16), dp(12), dp(16), dp(12));
         setup.addView(address);
 
         status = new TextView(this);
         status.setTextColor(Color.parseColor("#ff8b9a"));
-        status.setPadding(0, dp(10), 0, dp(10));
+        status.setTextSize(13);
+        status.setPadding(0, dp(12), 0, dp(12));
         setup.addView(status);
 
         Button connect = new Button(this);
         connect.setText("Connect");
+        connect.setAllCaps(false);
+        connect.setTypeface(Typeface.DEFAULT_BOLD);
+        connect.setTextColor(Color.parseColor("#050505"));
+        connect.setBackground(rounded("#55CFFF", null));
+        connect.setMinHeight(dp(56));
         connect.setOnClickListener(v -> connect());
         setup.addView(connect);
+
+        TextView fine = new TextView(this);
+        fine.setText("Android remote 1.1. Not a Play Store app.");
+        fine.setTextColor(Color.parseColor("#8a8a8a"));
+        fine.setTextSize(12);
+        fine.setPadding(0, dp(14), 0, 0);
+        setup.addView(fine);
 
         web = new WebView(this);
         web.setBackgroundColor(Color.parseColor("#050505"));
@@ -109,6 +134,10 @@ public class MainActivity extends Activity {
             showSetup("Use a full address, like https://cinevo.example.");
             return;
         }
+        if ("localhost".equalsIgnoreCase(host) || "127.0.0.1".equals(host) || "::1".equals(host)) {
+            showSetup("A phone cannot open localhost. Use this computer’s address on your network.");
+            return;
+        }
         String origin = scheme + "://" + host;
         if (uri.getPort() != -1) origin += ":" + uri.getPort();
         prefs().edit().putString(ORIGIN, origin).apply();
@@ -123,12 +152,17 @@ public class MainActivity extends Activity {
         bar.setPadding(dp(16), dp(12), dp(12), dp(8));
         TextView label = new TextView(this);
         label.setText("CINEVO Remote");
+        label.setTypeface(Typeface.DEFAULT_BOLD);
         label.setTextColor(Color.WHITE);
         label.setTextSize(16);
+        label.setLetterSpacing(0.04f);
         LinearLayout.LayoutParams grow = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
         label.setLayoutParams(grow);
         Button change = new Button(this);
         change.setText("Change house");
+        change.setAllCaps(false);
+        change.setTextColor(Color.parseColor("#55CFFF"));
+        change.setBackgroundColor(Color.TRANSPARENT);
         change.setOnClickListener(v -> showSetup(""));
         bar.addView(label);
         bar.addView(change);
@@ -148,6 +182,14 @@ public class MainActivity extends Activity {
 
     private SharedPreferences prefs() {
         return getSharedPreferences(PREFS, MODE_PRIVATE);
+    }
+
+    private GradientDrawable rounded(String fill, String stroke) {
+        GradientDrawable shape = new GradientDrawable();
+        shape.setCornerRadius(dp(16));
+        shape.setColor(Color.parseColor(fill));
+        if (stroke != null) shape.setStroke(Math.max(1, dp(1)), Color.parseColor(stroke));
+        return shape;
     }
 
     private int dp(int value) {

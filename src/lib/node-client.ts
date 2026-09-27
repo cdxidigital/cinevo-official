@@ -148,7 +148,7 @@ export const INSTALLERS = [
     label: "Windows",
     arch: "x64",
     href: "/installers/CINEVO-Node-Windows-x64.zip",
-    hint: "Signed · CINEVO icon · loopback exe",
+    hint: "CINEVO icon · loopback only",
   },
   {
     id: "mac-arm",

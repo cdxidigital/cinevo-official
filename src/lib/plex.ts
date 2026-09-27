@@ -47,13 +47,19 @@ export function plexClientId() {
   return "cinevo-web";
 }
 
-export function plexAuthUrl(clientId: string, code: string) {
+export function plexAuthUrl(clientId: string, code: string, forwardUrl?: string) {
   const params = new URLSearchParams({
     clientID: clientId,
     code,
     "context[device][product]": "CINEVO",
+    "context[device][version]": "1.0.0",
+    "context[device][platform]": "Web",
+    "context[device][device]": "Web",
+    "context[device][deviceName]": "CINEVO",
   });
-  return `https://app.plex.tv/auth#?${params.toString()}`;
+  if (forwardUrl) params.set("forwardUrl", forwardUrl);
+  // Hashbang, not `auth#?`. Plex's app only reads the pin from `auth/#!?`.
+  return `https://app.plex.tv/auth/#!?${params.toString()}`;
 }
 
 export function isPlexServer(resource: { provides?: unknown; product?: unknown }) {

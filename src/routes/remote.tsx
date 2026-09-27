@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Download, Pause, Play, SkipBack, SkipForward, Square } from "lucide-react";
+import { Pause, Play, SkipBack, SkipForward, Square } from "lucide-react";
 import { Logo } from "@/components/cinevo/logo";
-import { InstallCinevo, REMOTE_APK } from "@/components/cinevo/house-remote";
+import { InstallCinevo } from "@/components/cinevo/house-remote";
+import { PhoneApps } from "@/components/cinevo/installers";
 import { readPhoneRemote, sendRemoteCommand } from "@/lib/remote-client";
 import { normalizeCode, type RemoteNow } from "@/lib/remote-protocol";
 
@@ -207,10 +208,11 @@ function RemotePage() {
 
       <footer className="remote-app__foot">
         <InstallCinevo compact />
-        <a href={REMOTE_APK} download>
-          <Download size={16} /> Download the Android remote
-        </a>
-        <p>The APK is a sideload remote, not a Play Store app. It opens this page after you enter your CINEVO address.</p>
+        <p className="remote-app__kicker">Get the remote</p>
+        <PhoneApps />
+        <p>
+          Android is a sideload APK, not a Play Store app. The iPhone profile adds a CINEVO icon for this house. The Xcode project is the native app for iOS 17 and later. A localhost address will not open from the phone.
+        </p>
       </footer>
     </main>
   );

@@ -16,6 +16,7 @@ import { Route as HelpRouteImport } from './routes/help'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as NodeRouteImport } from './routes/node'
 import { Route as RemoteRouteImport } from './routes/remote'
+import { Route as ApiIosProfileRouteImport } from './routes/api/ios-profile'
 import { Route as ApiRemoteRouteImport } from './routes/api/remote'
 import { Route as LegalPrivacyRouteImport } from './routes/legal.privacy'
 import { Route as LegalTermsRouteImport } from './routes/legal.terms'
@@ -57,6 +58,11 @@ const NodeRoute = NodeRouteImport.update({
 const RemoteRoute = RemoteRouteImport.update({
   id: '/remote',
   path: '/remote',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiIosProfileRoute = ApiIosProfileRouteImport.update({
+  id: '/api/ios-profile',
+  path: '/api/ios-profile',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiRemoteRoute = ApiRemoteRouteImport.update({
@@ -103,6 +109,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/node': typeof NodeRoute
   '/remote': typeof RemoteRoute
+  '/api/ios-profile': typeof ApiIosProfileRoute
   '/api/remote': typeof ApiRemoteRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
@@ -119,6 +126,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/node': typeof NodeRoute
   '/remote': typeof RemoteRoute
+  '/api/ios-profile': typeof ApiIosProfileRoute
   '/api/remote': typeof ApiRemoteRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
@@ -136,6 +144,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/node': typeof NodeRoute
   '/remote': typeof RemoteRoute
+  '/api/ios-profile': typeof ApiIosProfileRoute
   '/api/remote': typeof ApiRemoteRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
@@ -154,6 +163,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/node'
     | '/remote'
+    | '/api/ios-profile'
     | '/api/remote'
     | '/legal/privacy'
     | '/legal/terms'
@@ -170,6 +180,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/node'
     | '/remote'
+    | '/api/ios-profile'
     | '/api/remote'
     | '/legal/privacy'
     | '/legal/terms'
@@ -186,6 +197,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/node'
     | '/remote'
+    | '/api/ios-profile'
     | '/api/remote'
     | '/legal/privacy'
     | '/legal/terms'
@@ -203,6 +215,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   NodeRoute: typeof NodeRoute
   RemoteRoute: typeof RemoteRoute
+  ApiIosProfileRoute: typeof ApiIosProfileRoute
   ApiRemoteRoute: typeof ApiRemoteRoute
   LegalPrivacyRoute: typeof LegalPrivacyRoute
   LegalTermsRoute: typeof LegalTermsRoute
@@ -261,6 +274,13 @@ declare module '@tanstack/react-router' {
       path: '/remote'
       fullPath: '/remote'
       preLoaderRoute: typeof RemoteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ios-profile': {
+      id: '/api/ios-profile'
+      path: '/api/ios-profile'
+      fullPath: '/api/ios-profile'
+      preLoaderRoute: typeof ApiIosProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/remote': {
@@ -323,6 +343,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   NodeRoute: NodeRoute,
   RemoteRoute: RemoteRoute,
+  ApiIosProfileRoute: ApiIosProfileRoute,
   ApiRemoteRoute: ApiRemoteRoute,
   LegalPrivacyRoute: LegalPrivacyRoute,
   LegalTermsRoute: LegalTermsRoute,

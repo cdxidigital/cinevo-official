@@ -75,8 +75,9 @@ export function PlexConnect() {
         return;
       }
       setPin({ id: res.id, code: res.code });
-      const url = plexAuthUrl(clientId(), res.code);
-      window.open(url, "cinevo-plex", "width=560,height=760");
+      const url = plexAuthUrl(clientId(), res.code, window.location.href);
+      const popup = window.open(url, "cinevo-plex", "popup,width=560,height=760");
+      if (!popup) setMessage("The Plex window was blocked. Use the approval link below.");
       if (pollRef.current) window.clearInterval(pollRef.current);
       const started = Date.now();
       pollRef.current = window.setInterval(() => {
@@ -95,6 +96,9 @@ export function PlexConnect() {
           await refreshServers(poll.token, "");
         })();
       }, 1600);
+    } catch (err) {
+      const text = err instanceof Error ? err.message : "Could not start Plex sign-in.";
+      setMessage(text === "Unauthorized" ? "Sign in to CINEVO first. Plex connects to your house." : text);
     } finally {
       setPending(false);
     }
@@ -247,15 +251,18 @@ export function PlexConnect() {
 
       {pin ? (
         <div className="mt-3 rounded-md bg-cine-well px-3 py-3">
-          <p className="font-ui text-xs font-medium uppercase tracking-[0.1em] text-cine-muted">Plex pin</p>
-          <p className="mt-1 font-mono text-3xl font-semibold tracking-[0.12em]">{pin.code}</p>
+          <p className="font-ui text-xs font-medium uppercase tracking-[0.1em] text-cine-muted">Waiting for Plex</p>
           <p className="mt-2 text-sm text-cine-faint">
-            Approve CINEVO at{" "}
-            <a className="text-cine-cyan" href={plexAuthUrl(clientId(), pin.code)} target="_blank" rel="noreferrer">
-              plex.tv
-            </a>
-            . Waiting for the account…
+            Approve CINEVO in the Plex window. This is not a short code to type at plex.tv/link.
           </p>
+          <a
+            className="mt-3 inline-flex h-11 items-center font-ui text-sm font-bold text-cine-cyan"
+            href={plexAuthUrl(clientId(), pin.code, typeof window !== "undefined" ? window.location.href : undefined)}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Open Plex approval
+          </a>
         </div>
       ) : null}
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { Download, Smartphone } from "lucide-react";
+import { Smartphone } from "lucide-react";
 import { closeHouseRemote, formatHouseCode, readHouseCode, rotateHouseRemote, writeHouseCode } from "@/lib/remote-client";
+import { PhoneApps } from "./installers";
 
 export const REMOTE_APK = "/installers/CINEVO-Remote.apk";
 
@@ -66,10 +67,11 @@ export function HouseRemote() {
         <a className="house-btn house-btn--ghost" href="/remote">
           <Smartphone size={16} /> Open remote
         </a>
-        <a className="house-btn house-btn--ghost" href={REMOTE_APK} download>
-          <Download size={16} /> Android APK
-        </a>
       </div>
+      <PhoneApps />
+      <p className="remote-card__note">
+        A phone cannot open a localhost address. Use the computer’s address on your network. The remote never receives file paths or stream links.
+      </p>
     </div>
   );
 }
@@ -119,10 +121,10 @@ export function InstallCinevo({ compact = false }: { compact?: boolean }) {
       {!compact ? <h2>Add CINEVO to this phone</h2> : null}
       <p>
         {ios
-          ? "In Safari, tap Share, then Add to Home Screen. CINEVO opens full screen, without the browser bar."
+          ? "In Safari, tap Share, then Add to Home Screen. On the newest iOS, tap the puzzle icon in the bar first, then Share. Or install the CINEVO profile below."
           : ready
             ? "Install the house on this device. It uses the same sign-in and the library you already imported."
-            : "In Chrome or Edge, use the browser menu and choose Install app or Add to Home Screen."}
+            : "In Chrome or Edge, use the browser menu and choose Install app. Android can also sideload the remote."}
       </p>
       {ready ? (
         <button type="button" className="house-btn" onClick={() => void install()}>

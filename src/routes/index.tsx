@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowDownRight, ArrowRight, Check, Play, ShieldCheck } from "lucide-react";
-import { InstallerCards } from "@/components/cinevo/installers";
+import { InstallerCards, PhoneApps } from "@/components/cinevo/installers";
 import { Logo, Mark } from "@/components/cinevo/logo";
 import { LandingAuth } from "@/components/cinevo/account";
 import { Reveal, useParallax } from "@/components/cinevo/cine-motion";
@@ -213,6 +213,14 @@ function Home() {
           </Reveal>
           <Reveal delay={80}>
             <InstallerCards />
+          </Reveal>
+          <Reveal delay={120}>
+            <p className="public-kicker mt-14">PHONE REMOTE</p>
+            <h2 className="mt-4 font-ui text-3xl font-semibold tracking-tight md:text-4xl">Android, and current iPhone.</h2>
+            <p className="mt-3 mb-6 max-w-xl text-sm text-cine-muted">
+              The phone controls the house. It does not play the file. Cast and AirPlay stay on the screen that has the video.
+            </p>
+            <PhoneApps />
           </Reveal>
         </section>
 

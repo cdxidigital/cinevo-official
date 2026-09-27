@@ -7,8 +7,20 @@ import {
   parsePlexResources,
   parsePlexSections,
   rankConnections,
+  plexAuthUrl,
   type PlexConnection,
 } from "./plex.ts";
+
+test("plex approval link uses the hashbang route Plex actually reads", () => {
+  const url = new URL(plexAuthUrl("client-1", "pin-code", "https://house.example/app"));
+  assert.equal(url.origin + url.pathname, "https://app.plex.tv/auth/");
+  assert.match(url.hash, /^#!\?/);
+  const params = new URLSearchParams(url.hash.slice(3));
+  assert.equal(params.get("clientID"), "client-1");
+  assert.equal(params.get("code"), "pin-code");
+  assert.equal(params.get("forwardUrl"), "https://house.example/app");
+  assert.equal(params.get("context[device][product]"), "CINEVO");
+});
 
 test("filters plex.tv resources down to media servers", () => {
   const servers = parsePlexResources([
