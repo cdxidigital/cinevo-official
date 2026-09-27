@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Navigate, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { GROK_PROVIDERS, authClient, authEnabled, signIn } from "@/lib/auth/client";
+import { GROK_PROVIDERS, authClient, authEnabled, rememberSessionToken, sessionTokenFromAuthResponse, signIn } from "@/lib/auth/client";
 import { Logo } from "@/components/cinevo/logo";
 import { claimUsername } from "@/lib/sharing";
 import { appDestination } from "@/lib/app-destination";
@@ -58,6 +58,12 @@ function Login() {
     void nav({ to: "/app", search: { ...(room ? { room } : {}), ...(core ? { core } : {}) } });
   };
 
+  const keepSession = {
+    onSuccess(context: { response: Response }) {
+      rememberSessionToken(sessionTokenFromAuthResponse(context.response.headers.get("set-auth-token")));
+    },
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -68,6 +74,7 @@ function Login() {
           email: email.trim(),
           password,
           name: username.trim() || email.split("@")[0],
+          fetchOptions: keepSession,
         });
         if (err) {
           setError(err.message || "Could not create that account.");
@@ -75,7 +82,11 @@ function Login() {
         }
         await afterEmail(username);
       } else {
-        const { error: err } = await authClient.signIn.email({ email: email.trim(), password });
+        const { error: err } = await authClient.signIn.email({
+          email: email.trim(),
+          password,
+          fetchOptions: keepSession,
+        });
         if (err) {
           setError(err.message || "Email or password did not match.");
           return;
