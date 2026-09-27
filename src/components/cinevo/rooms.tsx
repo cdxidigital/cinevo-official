@@ -149,7 +149,7 @@ export function StageRoom() {
   const still = hero?.still || "/stills/hero-theater.jpg";
 
   return (
-    <div>
+    <div className="house-home">
       <section className="house-hero" aria-labelledby="featured-title">
         <ArtImage src={still} fallback="/stills/hero-theater.jpg" className="house-hero__art" />
         <div className="house-hero__shade" />
@@ -248,24 +248,30 @@ export function StageRoom() {
               </div>
             </div>
 
-            <div className="house-rails">
-              {continueWatching.length ? <Rail heading="Continue watching" titles={continueWatching} wide /> : null}
-              {queued.length ? <Rail heading="Up next" titles={queued} wide /> : null}
-              {played.length ? <Rail heading="Most played here" titles={played} /> : null}
-              {added.length ? <Rail heading="Recently added" titles={added} /> : null}
-              {suggestions.length ? <Rail heading="For you" titles={suggestions} /> : null}
-              {myList.length ? <Rail heading="My List" titles={myList} /> : null}
-              {collections.map((collection) => {
-                const titles = collection.titleIds
-                  .map((id) => library.find((title) => title.id === id))
-                  .filter((title): title is NonNullable<typeof title> => Boolean(title));
-                if (!titles.length) return null;
-                return <Rail key={collection.id} heading={collection.name} titles={titles} />;
-              })}
+            <div className="house-library">
+              <div className="house-rails">
+                {continueWatching.length ? <Rail heading="Continue watching" titles={continueWatching} wide /> : null}
+                {queued.length ? <Rail heading="Up next" titles={queued} wide /> : null}
+                {played.length ? <Rail heading="Most played here" titles={played} /> : null}
+                {added.length ? <Rail heading="Recently added" titles={added} /> : null}
+                {suggestions.length ? <Rail heading="For you" titles={suggestions} /> : null}
+                {myList.length ? <Rail heading="My List" titles={myList} /> : null}
+                {collections.map((collection) => {
+                  const titles = collection.titleIds
+                    .map((id) => library.find((title) => title.id === id))
+                    .filter((title): title is NonNullable<typeof title> => Boolean(title));
+                  if (!titles.length) return null;
+                  return <Rail key={collection.id} heading={collection.name} titles={titles} />;
+                })}
+              </div>
+              <PlatformArc quiet />
             </div>
           </>
-        ) : null}
-        <PlatformArc quiet={library.length > 0} />
+        ) : (
+          <div className="house-library">
+            <PlatformArc />
+          </div>
+        )}
       </div>
     </div>
   );
@@ -328,7 +334,7 @@ export function SidebarRoom() {
   const remote = useCinevo((s) => s.remoteTitles);
   const yours = [...local, ...remote];
   return (
-    <div className="house-page">
+    <div className="house-page house-page--flow">
       <header>
         <BrandKicker>CINEVO · Add sources</BrandKicker>
         <h1>Add sources</h1>

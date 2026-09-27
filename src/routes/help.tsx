@@ -23,6 +23,10 @@ function Help() {
         <p>Playback starts with the original file, proxied through CINEVO. If the browser cannot play it, CINEVO asks your Plex or Jellyfin server for an H.264 copy. That conversion uses the hardware you turned on there. CINEVO itself does not transcode. Choose Grid, List, or Hybrid on Movies, TV, and Library, and sort by title, year, or when it was added.</p>
       </section>
       <section>
+        <h2>On a TV</h2>
+        <p>While a proxied title is playing, use the TV button. Android and Chrome offer Cast. Safari on iPhone, iPad, and Mac offers AirPlay. The TV opens that same stream, so the house has to be an address on your network, not localhost. A file that only exists in this browser cannot be sent.</p>
+      </section>
+      <section>
         <h2>Share</h2>
         <p>
           Sharing sends a catalog invite, not the files. Open <Link to="/app" search={{ core: "sharing" }}>Sharing</Link> after you sign in.

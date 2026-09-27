@@ -57,7 +57,7 @@ export function ToolsRoom() {
   };
 
   return (
-    <div className="house-page tools-room">
+    <div className="house-page house-page--flow tools-room">
       <header>
         <BrandKicker>House tools</BrandKicker>
         <h1>Care for this library</h1>

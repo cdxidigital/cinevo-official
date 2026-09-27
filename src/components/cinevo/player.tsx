@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Activity, Bookmark, Download, Expand, Info, Pause, Play, Subtitles, Volume2, VolumeX, X } from "lucide-react";
+import { Activity, Bookmark, Cast, Download, Expand, Info, Pause, Play, Subtitles, Volume2, VolumeX, X } from "lucide-react";
 import { titleById, useCinevo } from "@/lib/cinevo-store";
 import { mediaUrl, sourceForTitle } from "@/lib/library";
 import { reconnectFolders } from "@/lib/folder-handles";
@@ -9,6 +9,7 @@ import type { RemoteCommand } from "@/lib/remote-protocol";
 import { issuePlayback } from "@/lib/playback";
 import type { PlaybackFit } from "@/lib/playback-urls";
 import { nodePlayUrl } from "@/lib/node-client";
+import { castBlock, type WirelessVideo } from "@/lib/cast";
 import { isLoopbackUrl } from "@/lib/playback-urls";
 import { BrandWatermark } from "./logo";
 
@@ -108,10 +109,65 @@ export function Player() {
     setFitTitle(playingId);
     setFit("original");
   }
+  const [onTv, setOnTv] = useState(false);
   const blob = title ? mediaUrl(title.id) : undefined;
   const file = playbackFailed ? undefined : blob || remoteSrc;
   const cueBase = useRef(new WeakMap<TextTrackCue, { start: number; end: number }>());
   const primed = useRef("");
+
+  useEffect(() => {
+    const video = videoRef.current as WirelessVideo | null;
+    if (!video || !file) {
+      setOnTv(false);
+      return;
+    }
+    video.disableRemotePlayback = false;
+    video.setAttribute("x-webkit-airplay", "allow");
+    const remote = video.remote;
+    if (!remote) return;
+    const mark = () => setOnTv(remote.state === "connected");
+    remote.addEventListener("connect", mark);
+    remote.addEventListener("connecting", mark);
+    remote.addEventListener("disconnect", mark);
+    mark();
+    return () => {
+      remote.removeEventListener("connect", mark);
+      remote.removeEventListener("connecting", mark);
+      remote.removeEventListener("disconnect", mark);
+    };
+  }, [file]);
+
+  const onCast = () => {
+    const video = videoRef.current as WirelessVideo | null;
+    if (!video || !file) return;
+    const block = castBlock(file, window.location.href);
+    if (block === "local") {
+      flash("This file is only in this browser. Cast and AirPlay need a proxied stream the TV can open.");
+      return;
+    }
+    if (block === "loopback") {
+      flash("This page is on localhost. A TV cannot open it. Use the house address on your network.");
+      return;
+    }
+    const remote = video.remote;
+    if (remote?.prompt) {
+      void remote.prompt().catch((err: unknown) => {
+        const name = err instanceof DOMException ? err.name : "";
+        if (name === "NotAllowedError" || name === "AbortError") return;
+        if (typeof video.webkitShowPlaybackTargetPicker === "function") {
+          video.webkitShowPlaybackTargetPicker();
+          return;
+        }
+        flash("No Cast or AirPlay receiver answered. Use Chrome on Android, or Safari on iPhone or Mac, on the same network.");
+      });
+      return;
+    }
+    if (typeof video.webkitShowPlaybackTargetPicker === "function") {
+      video.webkitShowPlaybackTargetPicker();
+      return;
+    }
+    flash("This browser has no Cast or AirPlay. Use Chrome on Android, or Safari on iPhone or Mac.");
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -369,6 +425,7 @@ export function Player() {
           playsInline
           preload="auto"
           autoPlay
+          disableRemotePlayback={false}
           muted={muted}
           onLoadedData={(e) => {
             const v = e.currentTarget;
@@ -635,7 +692,7 @@ export function Player() {
             ) : null}
             <strong className="truncate font-ui text-lg font-semibold tracking-tight">{title.title}</strong>
           </div>
-          <div className="flex shrink-0 items-center text-cine-muted">
+          <div className="flex max-w-full flex-wrap items-center justify-end text-cine-muted">
             {file ? (
               <>
                 <button
@@ -723,6 +780,15 @@ export function Player() {
                   }}
                 >
                   <Download size={18} />
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={onTv}
+                  aria-label={onTv ? "Playing on a TV" : "Play on a TV"}
+                  className={`flex size-11 items-center justify-center ${onTv ? "text-cine-cyan" : ""}`}
+                  onClick={onCast}
+                >
+                  <Cast size={18} />
                 </button>
                 <button
                   type="button"

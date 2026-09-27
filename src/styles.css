@@ -747,7 +747,9 @@ html[data-theme="paper"] {
 
 .cinevo-house {
   position: relative;
-  min-height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
   background: var(--color-cine-bg);
   color: var(--color-cine-text);
 }
@@ -955,6 +957,11 @@ html[data-theme="paper"] .house-ambient {
 .house-main {
   position: relative;
   z-index: 10;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
   container-type: inline-size;
   container-name: house;
 }
@@ -962,17 +969,27 @@ html[data-theme="paper"] .house-ambient {
 .house-main--page {
   width: min(100%, clamp(40rem, 88vw, 110rem));
   margin: 0 auto;
-  padding: 7.25rem max(5vw, 1.25rem) 5rem;
+  padding: 5.25rem max(4vw, 1.15rem) 0.75rem;
+  overflow: hidden;
+}
+
+.house-home {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .house-hero {
   position: relative;
   isolation: isolate;
   display: flex;
-  min-height: min(86svh, 52rem);
+  flex: 1 1 auto;
+  min-height: clamp(14rem, 40dvh, 28rem);
+  max-height: 56dvh;
   align-items: flex-end;
   overflow: hidden;
-  padding: 0 max(4.5vw, 1.25rem) clamp(7.5rem, 14vw, 11rem);
+  padding: 4.5rem max(4.5vw, 1.25rem) 1rem;
 }
 
 .house-hero::after {
@@ -1108,18 +1125,26 @@ html[data-theme="paper"] .house-ambient {
 .house-stage {
   position: relative;
   z-index: 12;
-  width: min(1480px, 100%);
-  margin: -5.5rem auto 0;
-  padding: 0 max(4vw, 1.15rem) 6rem;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  width: 100%;
+  min-height: clamp(13.5rem, 38dvh, 22rem);
+  margin: 0;
+  padding: 0.35rem max(4vw, 1.15rem) 0.65rem;
+  overflow: hidden;
 }
 
 .house-filters {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 0.75rem 1.25rem;
   align-items: center;
-  margin: 0 0 1.75rem;
+  margin: 0 0 0.65rem;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
+.house-filters::-webkit-scrollbar { display: none; }
 
 .house-filters .house-sources {
   margin: 0;
@@ -1340,7 +1365,28 @@ html[data-theme="paper"] .house-ambient {
 
 .house-rails {
   display: grid;
-  gap: 2.25rem;
+  gap: 1.15rem;
+  align-content: start;
+}
+.house-library {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-bottom: 0.35rem;
+  scrollbar-width: thin;
+}
+.house-stage .house-chip {
+  min-height: 2.25rem;
+}
+.house-stage .house-sources {
+  flex-wrap: nowrap;
+}
+.house-rails .rail-card {
+  width: clamp(6.75rem, 16dvh, 10.75rem);
+}
+.house-rails .rail-card.is-wide {
+  width: clamp(12rem, 32dvh, 20rem);
 }
 
 .rail-head {
@@ -1572,17 +1618,49 @@ html[data-theme="paper"] .house-ambient {
 
 .poster-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(46%, 11.25rem), 1fr));
-  gap: clamp(1rem, 2.2vw, 1.6rem) clamp(0.55rem, 1.2vw, 0.9rem);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, clamp(8.25rem, 18cqi, 13.5rem)), 1fr));
+  gap: clamp(0.75rem, 1.6cqi, 1.35rem) clamp(0.45rem, 1.1cqi, 0.9rem);
 }
 
+.library-board {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.poster-grid,
+.library-list,
+.library-hybrid {
+  flex: 1 1 auto;
+  min-height: 0;
+  align-content: start;
+  overflow: auto;
+  padding-bottom: 1.25rem;
+}
+.house-page {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.house-page > header,
+.house-page > .house-sources {
+  flex: 0 0 auto;
+}
+.house-page--flow {
+  overflow: auto;
+  padding-bottom: 2rem;
+}
 .library-toolbar {
   display: flex;
+  flex: 0 0 auto;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  margin: 0 0 1rem;
+  margin: 0 0 0.85rem;
 }
 .library-toolbar > p {
   margin: 0;
@@ -1805,6 +1883,10 @@ html[data-theme="paper"] .house-ambient {
   padding-top: 2.25rem;
   border-top: 1px solid rgb(255 255 255 / 10%);
 }
+.house-library .platform-arc {
+  margin-top: 1.15rem;
+  padding-top: 1rem;
+}
 
 .platform-arc header {
   max-width: 36rem;
@@ -1996,7 +2078,8 @@ html[data-theme="paper"] .house-ambient {
 
 @media (max-width: 900px) {
   .house-hero {
-    min-height: 700px;
+    min-height: clamp(12rem, 36dvh, 22rem);
+    max-height: 48dvh;
   }
   .house-hero__art {
     object-position: 64% center;
@@ -2023,8 +2106,9 @@ html[data-theme="paper"] .house-ambient {
     display: none;
   }
   .house-hero {
-    min-height: 78svh;
-    padding: 0 1.2rem 6.5rem;
+    min-height: 34dvh;
+    max-height: 46dvh;
+    padding: 4.25rem 1.2rem 0.75rem;
   }
   .house-hero__shade {
     background: linear-gradient(180deg, color-mix(in srgb, var(--color-cine-bg) 55%, transparent) 0%, transparent 26%, var(--color-cine-bg) 100%);
@@ -2035,7 +2119,7 @@ html[data-theme="paper"] .house-ambient {
     font-size: 2.35rem;
   }
   .house-stage {
-    margin-top: -3.5rem;
+    min-height: 42dvh;
     padding-right: 1.2rem;
     padding-left: 1.2rem;
   }
@@ -2806,7 +2890,7 @@ html[data-theme="paper"] .house-ambient {
   margin-bottom: auto;
 }
 
-@media (max-height: 740px) {
+@media (max-height: 900px) {
   .login-stage { padding: 0.75rem 1rem; }
   .login-card {
     margin-top: 0.25rem;
@@ -3364,6 +3448,16 @@ html[data-theme="iris"] .cinevo-house {
   animation: house-fade 380ms var(--ease-cine) both;
 }
 
+.house-hero .lede--clamp {
+  -webkit-line-clamp: 2;
+}
+.house-hero .house-actions {
+  margin-top: 0.9rem;
+}
+.house-hero .house-meta {
+  margin: 0.55rem 0 0.45rem;
+}
+
 .house-hero__copy > * {
   animation: house-enter 520ms var(--ease-cine) both;
 }
@@ -3571,11 +3665,12 @@ html[data-theme="paper"] .side-rail__nav button.is-on {
 /* ── dynamic sizing ── */
 @container house (min-width: 0) {
   .house-hero {
-    padding-bottom: clamp(5.5rem, 14cqi, 11rem);
+    padding-bottom: 1rem;
+    min-height: clamp(13rem, 38dvh, 26rem);
   }
   .house-hero h1,
   .house-detail h1 {
-    font-size: clamp(2.35rem, 8cqi, 4.6rem);
+    font-size: clamp(1.85rem, 4.8cqi, 3.35rem);
   }
   .house-page h1 {
     font-size: clamp(1.65rem, 4.6cqi, 2.5rem);
@@ -3592,26 +3687,17 @@ html[data-theme="paper"] .side-rail__nav button.is-on {
     font-size: clamp(0.95rem, 1.5cqi, 1.0625rem);
   }
   .rail-card {
-    width: clamp(7.5rem, 22cqi, 16rem);
+    width: clamp(6.75rem, 16dvh, 10.75rem);
   }
   .rail-card.is-wide {
-    width: clamp(14rem, 46cqi, 32rem);
+    width: clamp(12rem, 32dvh, 20rem);
   }
   .poster-grid {
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, clamp(8.5rem, 22cqi, 16rem)), 1fr));
-    gap: clamp(0.7rem, 2cqi, 1.5rem) clamp(0.45rem, 1.2cqi, 1rem);
+    gap: clamp(0.7rem, 2cqi, 1.35rem) clamp(0.45rem, 1.2cqi, 0.9rem);
   }
   .house-main--page {
-    padding-top: clamp(5.25rem, 10cqi, 7.25rem);
+    padding-top: clamp(4.6rem, 5cqi, 5.4rem);
     padding-inline: max(4cqi, 1.15rem);
-  }
-}
-
-@container house (max-width: 46rem) {
-  .house-board,
-  .tools-grid,
-  .platform-arc__grid {
-    grid-template-columns: 1fr;
   }
 }
 
@@ -3706,7 +3792,7 @@ html[data-theme="paper"] .side-rail__nav button.is-on {
 .install-bar {
   position: fixed;
   z-index: 40;
-  top: 7.25rem;
+  top: 8.75rem;
   left: 50%;
   display: flex;
   gap: 0.75rem;

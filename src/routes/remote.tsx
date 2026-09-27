@@ -102,7 +102,7 @@ function RemotePage() {
       {!code ? (
         <form className="remote-join glass-strong" onSubmit={join}>
           <h1>Control the house</h1>
-          <p>This remote does not play video itself. It talks to the CINEVO screen that is already signed in.</p>
+          <p>This remote controls the house. It does not play or cast. Cast and AirPlay are on the screen that has the video.</p>
           <label>
             House code
             <input
