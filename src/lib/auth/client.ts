@@ -94,6 +94,13 @@ function inLivePreview(): boolean {
   );
 }
 
+/** Popup when the Vite `/auth/popup` handler is the server: preview or this machine. */
+function useOAuthPopup(): boolean {
+  if (typeof window === "undefined") return false;
+  const host = window.location.hostname;
+  return host.endsWith(".grok-sandbox.com") || host === "localhost" || host === "127.0.0.1" || host === "::1";
+}
+
 /** Message the popup posts back to the opener once sign-in completes. */
 type PopupMessage = { source: "grok-auth-popup"; token: string | null; error?: string };
 
@@ -116,12 +123,11 @@ export async function signIn(
   opts: { callbackURL?: string; errorCallbackURL?: string } = {},
 ): Promise<void> {
   const callbackURL = opts.callbackURL ?? "/";
-  const errorCallbackURL = opts.errorCallbackURL ?? "/";
 
   // Open the popup SYNCHRONOUSLY on the user gesture — before any await
   // (including signOut). Awaiting first drops user-gesture privilege in some
   // browsers when the opener is a cross-origin live-preview iframe.
-  const popup = inLivePreview() ? openSignInPopup(providerId) : null;
+  const popup = useOAuthPopup() ? openSignInPopup(providerId) : null;
 
   // Clear any prior session so switching providers actually switches identity.
   // Bounded because the popup is already open — a request that never settles
@@ -129,17 +135,17 @@ export async function signIn(
   // end a deployed session, so cutting it short at the preview's 1.5s would
   // start OAuth with the old session still live.
   await runPreSignInSignOut({
-    livePreview: inLivePreview(),
+    livePreview: inLivePreview() || useOAuthPopup(),
     hasBearer: Boolean(getBearerToken()),
     requestSignOut: () => authClient.signOut(),
     clearToken: () => setBearerToken(null),
   });
 
-  if (inLivePreview()) {
+  if (popup || useOAuthPopup()) {
     if (!popup) throw new Error("Pop-up blocked — allow pop-ups for sign-in");
-    const token = await waitForPopupToken(popup);
-    if (!token) throw new Error("Sign-in was cancelled or failed");
-    setBearerToken(token);
+    const result = await waitForPopupToken(popup);
+    if (!result.token) throw new Error(readableOAuthError(result.error));
+    setBearerToken(result.token);
     // Refresh the client session store with the bearer attached (onRequest).
     // Avoid a full iframe reload when we're already on the destination — that
     // reload was the slow "still loading after the popup closed" feeling.
@@ -161,7 +167,7 @@ export async function signIn(
   const { data, error } = await authClient.signIn.oauth2({
     providerId,
     callbackURL,
-    errorCallbackURL,
+    errorCallbackURL: opts.errorCallbackURL ?? "/login?mode=in",
   });
   if (error) throw new Error(error.message ?? "Sign-in failed");
   if (data?.url) window.location.href = data.url;
@@ -176,34 +182,42 @@ export async function signIn(
  * iframe the about:blank dance often fails on the first click and the window
  * ends up showing the app shell.
  */
+function readableOAuthError(error?: string): string {
+  if (!error || error === "1" || error === "sign_in_failed") return "Sign-in was cancelled or did not finish.";
+  if (error.startsWith("oauth_init") || error.length > 160) return "Could not start that sign-in. Try again.";
+  return error;
+}
+
 function openSignInPopup(providerId: string): Window | null {
   const origin = window.location.origin;
-  const url = `${origin}/auth/popup?providerId=${encodeURIComponent(providerId)}`;
+  const url = new URL(`${origin}/auth/popup`);
+  url.searchParams.set("providerId", providerId);
+  url.searchParams.set("origin", origin);
   // Unique name per attempt so a prior attempt stuck on the SPA is not reused.
   const name = `grok-signin-${Date.now()}`;
-  return window.open(url, name, "popup,width=500,height=650");
+  return window.open(url.toString(), name, "popup,width=500,height=650");
 }
 
 /**
  * Wait for the popup's completion page to postMessage the session bearer (or
  * for the user to dismiss the popup).
  */
-function waitForPopupToken(popup: Window): Promise<string | null> {
+function waitForPopupToken(popup: Window): Promise<{ token: string | null; error?: string }> {
   return new Promise((resolve) => {
     const origin = window.location.origin;
     let settled = false;
     let closeTimer: number | undefined;
-    const settle = (token: string | null) => {
+    const settle = (token: string | null, error?: string) => {
       if (settled) return;
       settled = true;
       cleanup();
-      resolve(token);
+      resolve(error ? { token: null, error } : { token });
     };
     const onMessage = (event: MessageEvent) => {
       if (event.origin !== origin) return;
       const data = event.data as PopupMessage | undefined;
       if (!data || data.source !== "grok-auth-popup") return;
-      settle(data.token ?? null);
+      settle(data.token ?? null, data.error);
     };
     // Fallback when the user dismisses the popup. Grace period lets the
     // completion page's postMessage win over a racing `popup.closed`.

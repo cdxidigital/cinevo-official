@@ -9,6 +9,7 @@ import { useCurrentUserState } from "@/lib/auth/use-current-user";
 export const Route = createFileRoute("/login")({
   validateSearch: (search: Record<string, unknown>) => ({
     mode: search.mode === "up" ? ("up" as const) : ("in" as const),
+    ...(typeof search.error === "string" && search.error ? { error: search.error } : {}),
     ...appDestination(search),
   }),
   component: Login,
@@ -16,7 +17,7 @@ export const Route = createFileRoute("/login")({
 
 function Login() {
   const nav = useNavigate();
-  const { mode: initial, room, core } = Route.useSearch();
+  const { mode: initial, room, core, error: oauthError } = Route.useSearch();
   const { user, isPending } = useCurrentUserState();
   const [mode, setMode] = useState<"in" | "up">(initial);
   const [email, setEmail] = useState("");
@@ -28,6 +29,11 @@ function Login() {
   useEffect(() => {
     setMode(initial);
   }, [initial]);
+
+  useEffect(() => {
+    if (!oauthError) return;
+    setError("Google or X did not finish signing in. Try again, or use email.");
+  }, [oauthError]);
 
   if (isPending) {
     return (
