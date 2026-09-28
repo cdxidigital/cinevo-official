@@ -1,5 +1,5 @@
-import { createFileRoute, Navigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { createFileRoute, Navigate, useNavigate } from "@tanstack/react-router";
+import { useEffect, useRef } from "react";
 import { Shell } from "@/components/cinevo/shell";
 import { RoomSwitch } from "@/components/cinevo/rooms";
 import {
@@ -17,6 +17,7 @@ import { Logo } from "@/components/cinevo/logo";
 import { appDestination, roomFromParam } from "@/lib/app-destination";
 import { useCinevo } from "@/lib/cinevo-store";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
+import { authClient, getBearerToken } from "@/lib/auth/client";
 
 export const Route = createFileRoute("/app")({
   validateSearch: (search: Record<string, unknown>) => appDestination(search),
@@ -43,10 +44,12 @@ function AppSkeleton() {
 
 function Cinema() {
   const { user, isPending } = useCurrentUserState();
+  const sessionRetry = useRef(false);
   const room = useCinevo((s) => s.room);
   const setRoom = useCinevo((s) => s.setRoom);
   const setCoreOpen = useCinevo((s) => s.setCoreOpen);
   const search = Route.useSearch();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const next = roomFromParam(search.room);
@@ -54,7 +57,29 @@ function Cinema() {
     if (search.core) setCoreOpen(true, search.core);
   }, [search.room, search.core, setRoom, setCoreOpen]);
 
+  useEffect(() => {
+    return useCinevo.subscribe((state, prev) => {
+      if (state.coreOpen === prev.coreOpen && state.coreTab === prev.coreTab) return;
+      const core = state.coreOpen && state.coreTab !== "operations" ? state.coreTab : undefined;
+      void navigate({
+        to: "/app",
+        search: (prevSearch) => {
+          const next = { ...prevSearch };
+          if (core) next.core = core;
+          else delete next.core;
+          return next;
+        },
+        replace: true,
+      });
+    });
+  }, [navigate]);
+
   if (isPending) return <AppSkeleton />;
+  if (!user && getBearerToken() && !sessionRetry.current) {
+    sessionRetry.current = true;
+    void authClient.getSession();
+    return <AppSkeleton />;
+  }
   if (!user) {
     return (
       <Navigate

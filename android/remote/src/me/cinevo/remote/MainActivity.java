@@ -94,7 +94,7 @@ public class MainActivity extends Activity {
         setup.addView(connect);
 
         TextView fine = new TextView(this);
-        fine.setText("Android remote 1.1. Not a Play Store app.");
+        fine.setText("Android remote 1.2. Not a Play Store app.");
         fine.setTextColor(Color.parseColor("#8a8a8a"));
         fine.setTextSize(12);
         fine.setPadding(0, dp(14), 0, 0);
@@ -107,21 +107,38 @@ public class MainActivity extends Activity {
         settings.setDomStorageEnabled(true);
         web.setWebViewClient(new WebViewClient() {
             @Override
+            public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                return !sameHouse(url);
+            }
+
+            @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                Uri saved = Uri.parse(prefs().getString(ORIGIN, ""));
-                String host = request.getUrl().getHost();
-                return host == null || saved.getHost() == null || !host.equalsIgnoreCase(saved.getHost());
+                return !sameHouse(request.getUrl().toString());
             }
 
             @Override
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
                 if (request.isForMainFrame()) showSetup("Could not open that house. Check the address and try again.");
             }
+
+            @Override
+            public void onReceivedHttpError(WebView view, WebResourceRequest request, android.webkit.WebResourceResponse errorResponse) {
+                if (request.isForMainFrame() && errorResponse.getStatusCode() >= 500) {
+                    showSetup("That house is not answering. Try the address again in a moment.");
+                }
+            }
         });
 
         String saved = prefs().getString(ORIGIN, "");
         if (saved == null || saved.isEmpty()) showSetup("");
         else showWeb(saved);
+    }
+
+    private boolean sameHouse(String url) {
+        Uri next = Uri.parse(url);
+        Uri saved = Uri.parse(prefs().getString(ORIGIN, ""));
+        String host = next.getHost();
+        return host != null && saved.getHost() != null && host.equalsIgnoreCase(saved.getHost());
     }
 
     private void connect() {

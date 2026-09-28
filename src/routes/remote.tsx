@@ -211,7 +211,7 @@ function RemotePage() {
         <p className="remote-app__kicker">Get the remote</p>
         <PhoneApps />
         <p>
-          Android is a sideload APK, not a Play Store app. The iPhone profile adds a CINEVO icon for this house. The Xcode project is the native app for iOS 17 and later. A localhost address will not open from the phone.
+          Android is a sideload APK, not a Play Store app. The iPhone profile adds a CINEVO icon for this house. A localhost address will not open from the phone.
         </p>
       </footer>
     </main>

@@ -24,7 +24,7 @@ const PHONE_APPS = [
   {
     id: "android",
     kicker: "Android",
-    title: "Remote 1.1",
+    title: "Remote 1.2",
     detail: "Sideload the APK. Play, pause, and seek only. The video stays on the house.",
     href: "/installers/CINEVO-Remote.apk",
     download: true,
@@ -38,15 +38,6 @@ const PHONE_APPS = [
     href: "/api/ios-profile",
     download: false,
     action: "Get profile",
-  },
-  {
-    id: "ios-xcode",
-    kicker: "iOS 17 and later",
-    title: "Xcode project",
-    detail: "Current SwiftUI remote for iPhone and iPad. Sign it with your Apple ID. Not an App Store build.",
-    href: "/installers/CINEVO-Remote-iOS.zip",
-    download: true,
-    action: "Download project",
   },
 ] as const;
 

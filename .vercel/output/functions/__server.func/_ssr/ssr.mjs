@@ -106,7 +106,7 @@ var HEADERS = { TSS_SHELL: "X-TSS_SHELL" };
 * the dev styles URL for route-scoped CSS collection.
 */
 async function getStartManifest(matchedRoutes) {
-	const { tsrStartManifest } = await import("../_tanstack-start-manifest_v-CeSJlMv9.mjs");
+	const { tsrStartManifest } = await import("../_tanstack-start-manifest_v-C_JWSjnJ.mjs");
 	const startManifest = tsrStartManifest();
 	let routes = startManifest.routes;
 	routes[rootRouteId];
@@ -128,35 +128,35 @@ async function getStartManifest(matchedRoutes) {
 var manifest = {
 	"0abf443269b5766502610cfd9a54a85d258dbfca038b894bdd12f186b2e3fca7": {
 		functionName: "jellyfinImportSections_createServerFn_handler",
-		importer: () => import("./jellyfin-api-C4HFikHE.mjs")
+		importer: () => import("./jellyfin-api-zxrsfFfD.mjs")
 	},
 	"13efa651e638069cac1f159f51b3c7c2b18d85d5124730adcd04341390d3eb29": {
 		functionName: "openShare_createServerFn_handler",
-		importer: () => import("./sharing-Bk-4Vx_4.mjs")
+		importer: () => import("./sharing-C_NGc1ex.mjs")
 	},
 	"285ba666976a3441837695ddd867727ae066a2557f7d04def4368d428fa219cc": {
 		functionName: "issuePlayback_createServerFn_handler",
-		importer: () => import("./playback-Do6GnQLb.mjs")
+		importer: () => import("./playback-DLF3X4Z5.mjs")
 	},
 	"2c4985e96c199268f7f639534cb5e8e31d6b19d43286bf77416413db60ffde26": {
 		functionName: "fetchSessionUser_createServerFn_handler",
-		importer: () => import("../__root-D0gAQ0nb.mjs")
+		importer: () => import("../__root-DBOWH8Kz.mjs")
 	},
 	"319831f9a0af4c9103bf2458ab04d2536541d51dcf0f07e47fa151922a056284": {
 		functionName: "setShareStatus_createServerFn_handler",
-		importer: () => import("./sharing-Bk-4Vx_4.mjs")
+		importer: () => import("./sharing-C_NGc1ex.mjs")
 	},
 	"3b4bb4c4449e4f7cbed728d66d982ae6de5dcd43acca1136797adc964162c2ee": {
 		functionName: "plexOpenServer_createServerFn_handler",
-		importer: () => import("./plex-api-BhUdjgVx.mjs")
+		importer: () => import("./plex-api-Cycp1qWw.mjs")
 	},
 	"4bf247dd5cb2e1f33ca4eb67235838f6f199965b4aef17e3451f0e92425689b6": {
 		functionName: "jellyfinConnect_createServerFn_handler",
-		importer: () => import("./jellyfin-api-C4HFikHE.mjs")
+		importer: () => import("./jellyfin-api-zxrsfFfD.mjs")
 	},
 	"548da63b383aa8cc09c51a5899533646c52f4c68cb8c2ef2e2c9cccaa1c52f95": {
 		functionName: "listMyShares_createServerFn_handler",
-		importer: () => import("./sharing-Bk-4Vx_4.mjs")
+		importer: () => import("./sharing-C_NGc1ex.mjs")
 	},
 	"7ebb63b2bc6bc267a35ed0fda7ece5b3241b752253db5bd836ae7020e8c799f4": {
 		functionName: "askCinevo_createServerFn_handler",
@@ -164,47 +164,47 @@ var manifest = {
 	},
 	"8fdebd237b20b8988d4b74313d86857020fb83c844c4c09a52255338ac0a62c2": {
 		functionName: "plexStartPin_createServerFn_handler",
-		importer: () => import("./plex-api-BhUdjgVx.mjs")
+		importer: () => import("./plex-api-Cycp1qWw.mjs")
 	},
 	"a2c3c4f890996a4f965cfe90be75b904e1ef7c0d41c7a73da07e74c8d6682ac0": {
 		functionName: "plexImportSections_createServerFn_handler",
-		importer: () => import("./plex-api-BhUdjgVx.mjs")
+		importer: () => import("./plex-api-Cycp1qWw.mjs")
 	},
 	"b1a629896a5a292418e73f888427598ab0a902c8f963c938f2e4cd8a5ed40586": {
 		functionName: "plexPollPin_createServerFn_handler",
-		importer: () => import("./plex-api-BhUdjgVx.mjs")
+		importer: () => import("./plex-api-Cycp1qWw.mjs")
 	},
 	"b670e38f35357464eddb77d89fbbffb163995da493c86e56e6512e69a50dc1d3": {
 		functionName: "refreshLibraryArt_createServerFn_handler",
-		importer: () => import("./artwork-DEx-RC9P.mjs")
+		importer: () => import("./artwork-CNPEWyxe.mjs")
 	},
 	"c7ceec7cc6bf5575eac80724623fad4deb5b4ab2d639cf98ac11a39677e3aae0": {
 		functionName: "lookupUsername_createServerFn_handler",
-		importer: () => import("./sharing-Bk-4Vx_4.mjs")
+		importer: () => import("./sharing-C_NGc1ex.mjs")
 	},
 	"d429d5e0c291120cfe1a14773f50a5c733edabfa4a01a292303538ee81e25668": {
 		functionName: "createShare_createServerFn_handler",
-		importer: () => import("./sharing-Bk-4Vx_4.mjs")
+		importer: () => import("./sharing-C_NGc1ex.mjs")
 	},
 	"dda083ec9095a7d394310833eab3e2463ffca531929809b6071a9f5ead98e1c7": {
 		functionName: "jellyfinListSections_createServerFn_handler",
-		importer: () => import("./jellyfin-api-C4HFikHE.mjs")
+		importer: () => import("./jellyfin-api-zxrsfFfD.mjs")
 	},
 	"debfda2e105582d9114e12506bb512408a0400e2edcc3ba5b30ed4bed7eb8698": {
 		functionName: "bumpWatch_createServerFn_handler",
-		importer: () => import("./sharing-Bk-4Vx_4.mjs")
+		importer: () => import("./sharing-C_NGc1ex.mjs")
 	},
 	"e89ce23a72f695aa6514163b0d0ccdfd8b7c4ecff4d273bc467ecade4fbacdf0": {
 		functionName: "getMyProfile_createServerFn_handler",
-		importer: () => import("./sharing-Bk-4Vx_4.mjs")
+		importer: () => import("./sharing-C_NGc1ex.mjs")
 	},
 	"f742f8d7a30fe6eb49996cb6b0306b8201fa2f0d7399acc54c534c063424a525": {
 		functionName: "claimUsername_createServerFn_handler",
-		importer: () => import("./sharing-Bk-4Vx_4.mjs")
+		importer: () => import("./sharing-C_NGc1ex.mjs")
 	},
 	"fe32bd140d3583c344ef891531d16c93349abb6d1e02a5fadc3e79e692953852": {
 		functionName: "plexListServers_createServerFn_handler",
-		importer: () => import("./plex-api-BhUdjgVx.mjs")
+		importer: () => import("./plex-api-Cycp1qWw.mjs")
 	}
 };
 async function getServerFnById(id, access) {
@@ -1474,7 +1474,7 @@ var getBaseManifest = getProdBaseManifest;
 var createEarlyHintsForRequest = createEarlyHintsCollector;
 async function loadEntries() {
 	const [routerEntry, startEntry, pluginAdapters] = await Promise.all([
-		import("./router-DvKHbKkc.mjs").then((n) => n.t),
+		import("./router-DnPGrcCK.mjs").then((n) => n.t),
 		import("./start-5Z2QO8AU.mjs"),
 		import("./empty-plugin-adapters-D9UWiqvJ.mjs")
 	]);

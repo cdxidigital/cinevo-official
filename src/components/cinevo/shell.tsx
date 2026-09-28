@@ -1,4 +1,4 @@
-import { Bell, Clapperboard, Home, Library, Menu, Search, Settings2, Tv, Wrench, X } from "lucide-react";
+import { Bell, Clapperboard, Home, Library, Menu, Search, Settings2, Sparkles, Tv, Wrench, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { paramFromRoom } from "@/lib/app-destination";
@@ -76,6 +76,7 @@ export function Shell({
   const setSearchOpen = useCinevo((s) => s.setSearchOpen);
   const setSettingsOpen = useCinevo((s) => s.setSettingsOpen);
   const setCoreOpen = useCinevo((s) => s.setCoreOpen);
+  const coreTab = useCinevo((s) => s.coreTab);
   const setNoticesOpen = useCinevo((s) => s.setNoticesOpen);
   const unread = useCinevo((s) => s.notices.filter((n) => !n.readAt).length);
   const night = useCinevo((s) => s.prefs.nightMode);
@@ -147,6 +148,7 @@ export function Shell({
   const go = (id: Room) => {
     setRoom(id);
     setDrawer(false);
+    if (useCinevo.getState().coreOpen) setCoreOpen(false);
     const room = paramFromRoom(id);
     void navigate({
       to: "/app",
@@ -176,17 +178,26 @@ export function Shell({
                 key={item.id}
                 type="button"
                 onClick={() => go(item.id)}
-                className={cn(room === item.id && "is-on")}
-                aria-current={room === item.id ? "page" : undefined}
+                className={cn(room === item.id && !(coreOpen && coreTab === "ai") && "is-on")}
+                aria-current={room === item.id && !(coreOpen && coreTab === "ai") ? "page" : undefined}
               >
                 <Icon size={18} />
                 {item.label}
               </button>
             );
           })}
+          <button
+            type="button"
+            className={cn(coreOpen && coreTab === "ai" && "is-on")}
+            aria-current={coreOpen && coreTab === "ai" ? "page" : undefined}
+            onClick={() => setCoreOpen(true, "ai")}
+          >
+            <Sparkles size={18} />
+            Ask
+          </button>
         </nav>
         <div className="side-rail__foot">
-          <button type="button" onClick={() => setCoreOpen(true)}>
+          <button type="button" onClick={() => setCoreOpen(true, coreTab === "ai" ? "libraries" : undefined)}>
             Core
           </button>
           <button type="button" onClick={() => setSettingsOpen(true)}>
@@ -232,7 +243,7 @@ export function Shell({
               With {party.with || "someone"} · End
             </button>
           ) : null}
-          <button type="button" className="top-nav__core max-md:hidden" onClick={() => setCoreOpen(true)}>
+          <button type="button" className="top-nav__core max-md:hidden" onClick={() => setCoreOpen(true, coreTab === "ai" ? "libraries" : undefined)}>
             Core
           </button>
           <button type="button" aria-label="Search" className="top-nav__icon md:hidden" onClick={() => setSearchOpen(true)}>
@@ -307,9 +318,23 @@ export function Shell({
               })}
               <button
                 type="button"
+                className={cn(
+                  "flex h-11 w-full items-center gap-2 rounded-md px-3 font-ui text-sm font-medium",
+                  coreOpen && coreTab === "ai" ? "bg-cine-surface text-cine-text" : "text-cine-muted",
+                )}
+                onClick={() => {
+                  setCoreOpen(true, "ai");
+                  setDrawer(false);
+                }}
+              >
+                <Sparkles size={18} />
+                Ask
+              </button>
+              <button
+                type="button"
                 className="flex h-11 w-full items-center rounded-md px-3 font-ui text-sm font-medium text-cine-muted"
                 onClick={() => {
-                  setCoreOpen(true);
+                  setCoreOpen(true, coreTab === "ai" ? "libraries" : undefined);
                   setDrawer(false);
                 }}
               >

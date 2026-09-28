@@ -15,6 +15,15 @@ export const Route = createFileRoute("/login")({
   component: Login,
 });
 
+function readableAuthError(message: string | undefined, signingUp: boolean) {
+  const text = (message || "").toLowerCase();
+  if (text.includes("already") || text.includes("exist")) return "That email already has a house. Sign in instead.";
+  if (text.includes("password") && text.includes("invalid")) return "Email or password did not match.";
+  if (text.includes("password")) return "Use a password of at least 8 characters.";
+  if (text.includes("origin")) return "This page could not confirm its address. Reload and try again.";
+  return message || (signingUp ? "Could not create that account." : "Email or password did not match.");
+}
+
 function Login() {
   const nav = useNavigate();
   const { mode: initial, room, core, error: oauthError } = Route.useSearch();
@@ -64,37 +73,60 @@ function Login() {
     void nav({ to: "/app", search: { ...(room ? { room } : {}), ...(core ? { core } : {}) } });
   };
 
-  const keepSession = {
-    onSuccess(context: { response: Response }) {
-      rememberSessionToken(sessionTokenFromAuthResponse(context.response.headers.get("set-auth-token")));
-    },
-  };
-
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    const cleanEmail = email.trim();
+    if (password.length < 8) {
+      setError("Use a password of at least 8 characters.");
+      return;
+    }
+    if (mode === "up" && username.trim() && !/^[A-Za-z][A-Za-z0-9_]{2,19}$/.test(username.trim())) {
+      setError("Username: 3–20 characters, starting with a letter. Letters, numbers, and underscores only.");
+      return;
+    }
     setPending(true);
+    let captured: string | null = null;
+    const fetchOptions = {
+      onSuccess(context: { response: Response }) {
+        captured = sessionTokenFromAuthResponse(context.response.headers.get("set-auth-token"));
+      },
+    };
     try {
       if (mode === "up") {
-        const { error: err } = await authClient.signUp.email({
-          email: email.trim(),
+        const { data, error: err } = await authClient.signUp.email({
+          email: cleanEmail,
           password,
-          name: username.trim() || email.split("@")[0],
-          fetchOptions: keepSession,
+          name: username.trim() || cleanEmail.split("@")[0] || "Member",
+          fetchOptions,
         });
         if (err) {
-          setError(err.message || "Could not create that account.");
+          setError(readableAuthError(err.message, true));
+          if ((err.message || "").toLowerCase().includes("exist")) setMode("in");
+          return;
+        }
+        rememberSessionToken(captured || (data && "token" in data ? String(data.token ?? "") : null) || null);
+        const session = await authClient.getSession();
+        if (!session.data?.user) {
+          setError("The account was created, but this browser did not keep the sign-in. Try signing in.");
+          setMode("in");
           return;
         }
         await afterEmail(username);
       } else {
-        const { error: err } = await authClient.signIn.email({
-          email: email.trim(),
+        const { data, error: err } = await authClient.signIn.email({
+          email: cleanEmail,
           password,
-          fetchOptions: keepSession,
+          fetchOptions,
         });
         if (err) {
-          setError(err.message || "Email or password did not match.");
+          setError(readableAuthError(err.message, false));
+          return;
+        }
+        rememberSessionToken(captured || (data && "token" in data ? String(data.token ?? "") : null) || null);
+        const session = await authClient.getSession();
+        if (!session.data?.user) {
+          setError("The password matched, but this browser did not keep the sign-in. Reload and try again.");
           return;
         }
         void nav({ to: "/app", search: { ...(room ? { room } : {}), ...(core ? { core } : {}) } });
@@ -149,10 +181,8 @@ function Login() {
                   placeholder="Username"
                   autoComplete="username"
                   aria-label="Username"
-                  required
                   minLength={3}
                   maxLength={20}
-                  pattern="[A-Za-z][A-Za-z0-9_]{2,19}"
                   title="3–20 letters, numbers, or underscores, starting with a letter"
                   className="h-12 rounded-xl border border-cine-border bg-cine-well px-4 font-ui"
                 />
@@ -179,7 +209,7 @@ function Login() {
                 className="h-12 rounded-xl border border-cine-border bg-cine-well px-4 font-ui"
               />
               {error ? <p className="text-sm text-cine-danger">{error}</p> : null}
-              <p className="text-xs text-cine-faint">Password at least 8 characters.{mode === "up" ? " Username: 3–20 letters, numbers, or underscores." : ""}</p>
+              <p className="text-xs text-cine-faint">Password at least 8 characters.{mode === "up" ? " Username is optional." : ""}</p>
               <button type="submit" disabled={pending} className="house-btn house-btn--play h-12 w-full">
                 {pending ? "Working…" : mode === "up" ? "Create account" : "Sign in"}
               </button>

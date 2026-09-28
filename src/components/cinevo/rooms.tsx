@@ -10,6 +10,7 @@ import {
   type Title,
 } from "@/lib/catalog";
 import { titleById, useCinevo, type Room, type SourceFilter } from "@/lib/cinevo-store";
+import { useCurrentUser } from "@/lib/auth/use-current-user";
 import { mostPlayed, tasteFrom } from "@/lib/house-tools";
 import { useLibrary } from "@/lib/use-library";
 import { Rail, ArtImage, LibraryBoard } from "./poster";
@@ -121,6 +122,12 @@ export function StageRoom() {
   const collections = useCinevo((s) => s.collections);
   const hydrated = useCinevo((s) => s.hydrated);
   const library = useLibrary();
+  const person = useCurrentUser();
+  const hour = new Date().getHours();
+  const hello =
+    hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const rawName = person && !person.isDevFallback ? person.displayName?.split(" ")[0] : "";
+  const who = rawName && !rawName.includes("@") && !/\d{4,}/.test(rawName) ? rawName : "";
 
   const pool = byMood(mood, library);
   const hero = pickFeatured({ mood, progress, tonight, pool: library });
@@ -146,14 +153,15 @@ export function StageRoom() {
     .map((id) => titleById(id))
     .filter((t): t is Title => Boolean(t));
 
-  const still = hero?.still || "/stills/hero-theater.jpg";
+  const still = hero?.still || "/stills/neon-alley.jpg";
 
   return (
     <div className="house-home">
       <section className="house-hero" aria-labelledby="featured-title">
-        <ArtImage src={still} fallback="/stills/hero-theater.jpg" className="house-hero__art" />
+        <ArtImage src={still} fallback="/stills/neon-alley.jpg" className="house-hero__art" />
         <div className="house-hero__shade" />
         <div className="house-hero__copy">
+          <p className="house-hello">{who ? `${hello}, ${who}` : hello}</p>
           {hero ? (
             <p className="house-kicker">{hero.kind === "series" ? "Series" : "Film"}</p>
           ) : (

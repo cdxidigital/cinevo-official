@@ -332,12 +332,6 @@ export function CoreModal() {
       })
       .catch(() => undefined);
   }, [open]);
-  if (!open) return null;
-  const points =
-    (sources.length ? 1 : 0) +
-    (profile ? 1 : 0) +
-    (aiConsent ? 1 : 0);
-
   const ask = async () => {
     if (!question.trim() || pending) return;
     setPending(true);
@@ -361,6 +355,74 @@ export function CoreModal() {
       setPending(false);
     }
   };
+  if (!open) return null;
+  if (tab === "ai") {
+    return (
+      <div className="ask-scrim" onMouseDown={() => setCoreOpen(false)}>
+        <section className="ask-panel" onMouseDown={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Ask CINEVO">
+          <header className="mb-4 flex items-start justify-between gap-3">
+            <div>
+              <p className="font-ui text-xs font-semibold tracking-[0.14em] text-cine-cyan">ASK</p>
+              <h2 className="font-ui text-2xl font-semibold tracking-tight">What should we watch?</h2>
+            </div>
+            <button type="button" aria-label="Close Ask" className="top-nav__icon" onClick={() => setCoreOpen(false)}>
+              <X size={18} />
+            </button>
+          </header>
+          <label className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+            <span>
+              <b className="block font-ui text-sm">Private metadata assistance</b>
+              <small className="text-cine-faint">Only titles already in this house</small>
+            </span>
+            <input
+              type="checkbox"
+              checked={aiConsent}
+              onChange={(e) => setAiConsent(e.target.checked)}
+              className="size-5 accent-cine-cyan"
+            />
+          </label>
+          {aiConsent ? (
+            <div className="mt-4 space-y-3">
+              <div className="flex flex-wrap gap-2">
+                {AI_PRESETS.map((p) => (
+                  <button
+                    key={p.label}
+                    type="button"
+                    className="h-11 rounded-full border border-white/10 bg-white/5 px-4 font-ui text-sm"
+                    onClick={() => setQuestion(p.q)}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+              <textarea
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                maxLength={400}
+                placeholder="What should I watch tonight?"
+                className="h-28 w-full rounded-2xl border border-white/10 bg-black/30 p-3 font-ui"
+              />
+              <button
+                type="button"
+                onClick={ask}
+                disabled={pending}
+                className="house-btn house-btn--play h-11"
+              >
+                {pending ? "Thinking…" : "Ask CINEVO"}
+              </button>
+              {answer ? <p className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm leading-relaxed text-cine-muted">{answer}</p> : null}
+            </div>
+          ) : (
+            <p className="mt-4 text-sm text-cine-faint">Turn consent on to ask about titles in this house. Nothing leaves until you do.</p>
+          )}
+        </section>
+      </div>
+    );
+  }
+  const points =
+    (sources.length ? 1 : 0) +
+    (profile ? 1 : 0) +
+    (aiConsent ? 1 : 0);
 
   return (
     <div className="fixed inset-0 z-40 overflow-y-auto bg-cine-bg/80 p-4" onMouseDown={() => setCoreOpen(false)}>
@@ -378,7 +440,7 @@ export function CoreModal() {
           </button>
         </header>
         <nav className="mb-5 flex flex-wrap gap-2">
-          {(["libraries", "sharing", "stewardship", "ai"] as const).map((t) => (
+          {(["libraries", "sharing", "stewardship"] as const).map((t) => (
             <button
               key={t}
               type="button"
@@ -387,7 +449,7 @@ export function CoreModal() {
                 tab === t ? "bg-cine-cyan text-cine-bg" : "bg-cine-surface text-cine-muted"
               }`}
             >
-              {t === "libraries" ? "Libraries" : t === "sharing" ? "Sharing" : t === "stewardship" ? "Privacy" : "AI"}
+              {t === "libraries" ? "Libraries" : t === "sharing" ? "Sharing" : "Privacy"}
             </button>
           ))}
         </nav>
@@ -461,56 +523,6 @@ export function CoreModal() {
                 </article>
               ))}
             </div>
-          </div>
-        )}
-        {tab === "ai" && (
-          <div className="space-y-3">
-            <label className="flex items-center justify-between rounded-lg bg-cine-surface px-3 py-3">
-              <span>
-                <b className="block font-ui text-sm">Private metadata assistance</b>
-                <small className="text-cine-faint">Only titles in this CINEVO library</small>
-              </span>
-              <input
-                type="checkbox"
-                checked={aiConsent}
-                onChange={(e) => setAiConsent(e.target.checked)}
-                className="size-5 accent-cine-cyan"
-              />
-            </label>
-            {aiConsent ? (
-              <>
-                <div className="flex flex-wrap gap-2">
-                  {AI_PRESETS.map((p) => (
-                    <button
-                      key={p.label}
-                      type="button"
-                      className="h-11 rounded-full bg-cine-well px-4 font-ui text-sm"
-                      onClick={() => setQuestion(p.q)}
-                    >
-                      {p.label}
-                    </button>
-                  ))}
-                </div>
-                <textarea
-                  value={question}
-                  onChange={(e) => setQuestion(e.target.value)}
-                  maxLength={400}
-                  placeholder="What should I watch tonight?"
-                  className="h-24 w-full rounded-md border border-cine-border bg-cine-well p-3 font-ui"
-                />
-                <button
-                  type="button"
-                  onClick={ask}
-                  disabled={pending}
-                  className="h-11 rounded-md bg-cine-cyan px-5 font-ui font-bold text-cine-bg"
-                >
-                  {pending ? "Thinking…" : "Ask CINEVO"}
-                </button>
-                {answer ? <p className="rounded-lg bg-cine-surface p-3 text-sm text-cine-muted">{answer}</p> : null}
-              </>
-            ) : (
-              <p className="text-sm text-cine-faint">Enable consent to ask the concierge.</p>
-            )}
           </div>
         )}
       </section>

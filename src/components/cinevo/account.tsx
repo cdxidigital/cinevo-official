@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { SignedIn, SignedOut, UserButton } from "@/lib/auth/gates";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
@@ -61,14 +61,18 @@ export function UsernameGate() {
   const [username, setUsername] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+  const ticket = useRef(0);
 
   useEffect(() => {
     if (isPending || !user || user.isDevFallback) return;
+    if (typeof window !== "undefined" && window.sessionStorage.getItem("cinevo-username-later") === "1") return;
     let cancelled = false;
     const check = async () => {
+      const mine = ++ticket.current;
       try {
         const res = await getMyProfile();
-        if (cancelled) return;
+        if (cancelled || mine !== ticket.current) return;
+        if (window.sessionStorage.getItem("cinevo-username-later") === "1") return;
         setNeeded(Boolean(res.ok && !res.profile));
       } catch {
         /* session still settling */
@@ -93,6 +97,7 @@ export function UsernameGate() {
       setError(res.error);
       return;
     }
+    ticket.current += 1;
     setNeeded(false);
   };
 
@@ -126,7 +131,15 @@ export function UsernameGate() {
         <button type="submit" disabled={pending} className="house-btn house-btn--play mt-5 w-full">
           {pending ? "Saving…" : "Save username"}
         </button>
-        <button type="button" className="mt-3 w-full text-center font-ui text-sm text-cine-faint" onClick={() => setNeeded(false)}>
+        <button
+          type="button"
+          className="mt-3 w-full text-center font-ui text-sm text-cine-faint"
+          onClick={() => {
+            window.sessionStorage.setItem("cinevo-username-later", "1");
+            ticket.current += 1;
+            setNeeded(false);
+          }}
+        >
           Remind me later
         </button>
       </form>

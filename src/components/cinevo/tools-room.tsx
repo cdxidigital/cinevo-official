@@ -71,7 +71,7 @@ export function ToolsRoom() {
       <InstallCinevo />
       <section className="tool-card">
         <h2>Taste in this house</h2>
-        <p>Genres rise when you save a title or start watching it. Ask CINEVO from Core once you opt in.</p>
+        <p>Genres rise when you save a title or start watching it. Ask is on the left, and it only uses titles already in this house.</p>
         {taste.length ? (
           <ul className="tool-pills">
             {taste.map((item) => (
