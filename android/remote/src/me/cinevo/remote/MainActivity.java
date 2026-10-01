@@ -9,7 +9,9 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.text.InputType;
 import android.view.Gravity;
+import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
@@ -17,10 +19,11 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-/** Sideload remote. Playback stays on the house; this activity only opens /remote. */
+/** Sideload player. CINEVO Server stays on the computer; this activity plays the house. */
 public class MainActivity extends Activity {
     private static final String PREFS = "cinevo-remote";
     private static final String ORIGIN = "origin";
@@ -59,7 +62,7 @@ public class MainActivity extends Activity {
         setup.addView(tag);
 
         TextView help = new TextView(this);
-        help.setText("Enter the address of your CINEVO house. This app sends play, pause, and seek only. The video stays on that screen.");
+        help.setText("Enter your CINEVO house. This is the player. CINEVO Server stays on the computer that holds the files.");
         help.setTextColor(Color.parseColor("#c8c8c8"));
         help.setTextSize(16);
         help.setLineSpacing(dp(2), 1f);
@@ -94,7 +97,7 @@ public class MainActivity extends Activity {
         setup.addView(connect);
 
         TextView fine = new TextView(this);
-        fine.setText("Android remote 1.2. Not a Play Store app.");
+        fine.setText("CINEVO player 2.0. Sideload. Not a Play Store app.");
         fine.setTextColor(Color.parseColor("#8a8a8a"));
         fine.setTextSize(12);
         fine.setPadding(0, dp(14), 0, 0);
@@ -105,6 +108,38 @@ public class MainActivity extends Activity {
         WebSettings settings = web.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
+        settings.setMediaPlaybackRequiresUserGesture(false);
+        settings.setUseWideViewPort(true);
+        settings.setLoadWithOverviewMode(true);
+        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
+        web.setWebChromeClient(new WebChromeClient() {
+            private View custom;
+            private CustomViewCallback callback;
+
+            @Override
+            public void onShowCustomView(View view, CustomViewCallback cb) {
+                if (custom != null) {
+                    cb.onCustomViewHidden();
+                    return;
+                }
+                custom = view;
+                callback = cb;
+                root.setVisibility(View.GONE);
+                addContentView(view, new FrameLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT));
+            }
+
+            @Override
+            public void onHideCustomView() {
+                if (custom == null) return;
+                ViewGroup parent = (ViewGroup) custom.getParent();
+                if (parent != null) parent.removeView(custom);
+                custom = null;
+                root.setVisibility(View.VISIBLE);
+                if (callback != null) callback.onCustomViewHidden();
+            }
+        });
         web.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
@@ -168,7 +203,7 @@ public class MainActivity extends Activity {
         bar.setGravity(Gravity.CENTER_VERTICAL);
         bar.setPadding(dp(16), dp(12), dp(12), dp(8));
         TextView label = new TextView(this);
-        label.setText("CINEVO Remote");
+        label.setText("CINEVO");
         label.setTypeface(Typeface.DEFAULT_BOLD);
         label.setTextColor(Color.WHITE);
         label.setTextSize(16);
@@ -186,7 +221,7 @@ public class MainActivity extends Activity {
         root.addView(bar);
         web.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
         root.addView(web);
-        web.loadUrl(origin + "/remote");
+        web.loadUrl(origin + "/app");
     }
 
     private void showSetup(String message) {

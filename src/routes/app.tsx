@@ -58,6 +58,14 @@ function Cinema() {
   }, [search.room, search.core, setRoom, setCoreOpen]);
 
   useEffect(() => {
+    try {
+      if (sessionStorage.getItem("cinevo-tv") === "1") document.documentElement.dataset.tv = "1";
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
     return useCinevo.subscribe((state, prev) => {
       if (state.coreOpen === prev.coreOpen && state.coreTab === prev.coreTab) return;
       const core = state.coreOpen && state.coreTab !== "operations" ? state.coreTab : undefined;

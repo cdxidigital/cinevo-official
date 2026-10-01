@@ -1,5 +1,12 @@
-const CACHE = "cinevo-shell-v1";
-const SHELL = ["/offline.html", "/pwa/icon-192.png", "/pwa/icon-512.png", "/favicon.svg"];
+const CACHE = "cinevo-player-v3";
+const SHELL = [
+  "/offline.html",
+  "/pwa/icon-180.png",
+  "/pwa/icon-192.png",
+  "/pwa/icon-512.png",
+  "/pwa/icon-maskable-512.png",
+  "/favicon.svg",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

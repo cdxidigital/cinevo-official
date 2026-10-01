@@ -98,7 +98,7 @@ function NodePairing() {
           <div>
             <p className="flex items-center gap-3 font-ui text-xs font-semibold uppercase tracking-[0.14em] text-cine-muted">
               <img src="/node-icon.png" alt="" className="size-8 rounded-md" />
-              CINEVO Node
+              CINEVO Server
             </p>
             <h1 className="mt-3 font-ui text-4xl font-semibold leading-tight tracking-tight md:text-6xl">
               Your library,
@@ -106,8 +106,8 @@ function NodePairing() {
               close to home.
             </h1>
             <p className="mt-5 max-w-xl text-cine-muted">
-              Pair this browser with the Node running on your Mac or Windows PC. It stays on loopback, uses a
-              ten-minute code, and never sends Plex or Jellyfin credentials to CINEVO.
+              This is the server, separate from the player. It stays on loopback, uses a ten-minute code, and never
+              sends Plex or Jellyfin credentials to the CINEVO app.
             </p>
             <div className="mt-6 flex flex-wrap gap-3 text-sm text-cine-muted">
               <span className="inline-flex items-center gap-2">
@@ -211,9 +211,9 @@ function NodePairing() {
 
         <section className="mt-16">
           <p className="font-ui text-xs font-semibold tracking-[0.12em] text-cine-cyan">INSTALLERS</p>
-          <h2 className="font-ui mt-1 text-2xl font-semibold tracking-tight">Windows and Mac nodes</h2>
+          <h2 className="font-ui mt-1 text-2xl font-semibold tracking-tight">Windows, Mac, and Linux / NAS</h2>
           <p className="mt-2 mb-5 max-w-xl text-sm text-cine-muted">
-            Unsigned release candidates. Loopback only. Sign and notarize before a public channel.
+            The computer or NAS that holds the files. Linux listens on the home network so this house can pair with it. Do not forward that port to the internet.
           </p>
           <InstallerCards />
         </section>

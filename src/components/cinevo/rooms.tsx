@@ -1,4 +1,4 @@
-import { Play, Shuffle, Star } from "lucide-react";
+import { Clock3, Library, Play, Plus, Server, Settings2, Share2, Shuffle, Sparkles, Star } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
   MOODS,
@@ -12,6 +12,7 @@ import {
 import { titleById, useCinevo, type Room, type SourceFilter } from "@/lib/cinevo-store";
 import { useCurrentUser } from "@/lib/auth/use-current-user";
 import { mostPlayed, tasteFrom } from "@/lib/house-tools";
+import { isLoopbackUrl } from "@/lib/playback-urls";
 import { useLibrary } from "@/lib/use-library";
 import { Rail, ArtImage, LibraryBoard } from "./poster";
 import { AddLibrary } from "./add-library";
@@ -25,6 +26,138 @@ const SOURCES: [SourceFilter, string][] = [
   ["jellyfin", "Jellyfin"],
   ["shared", "Shared"],
 ];
+
+function houseLink(sources: { kind: string; baseUrl?: string }[], nodeUrl: string, nodeToken: string) {
+  const relay = sources.some((s) => (s.kind === "plex" || s.kind === "jellyfin") && s.baseUrl && !isLoopbackUrl(s.baseUrl));
+  if (relay) return { mode: "relay" as const, label: "Remote server", detail: "Playback stays on the server you connected." };
+  const local =
+    sources.some((s) => s.kind === "folder" || isLoopbackUrl(s.baseUrl)) || Boolean(nodeToken && isLoopbackUrl(nodeUrl));
+  if (local) return { mode: "local" as const, label: "On this device", detail: "Folders and local servers stay in this house." };
+  return { mode: "idle" as const, label: "Nothing connected", detail: "Add a library when you are ready." };
+}
+
+function OsDeck({
+  watching,
+  collections,
+  added,
+  link,
+  onWatch,
+  onCollections,
+  onAdded,
+  onLink,
+}: {
+  watching: number;
+  collections: number;
+  added: number;
+  link: { mode: "local" | "relay" | "idle"; label: string };
+  onWatch: () => void;
+  onCollections: () => void;
+  onAdded: () => void;
+  onLink: () => void;
+}) {
+  const tiles = [
+    { icon: Play, title: "Continue watching", detail: watching ? `${watching} in progress` : "Nothing mid-watch", onClick: onWatch },
+    { icon: Library, title: "My collections", detail: collections === 1 ? "1 shelf" : collections ? `${collections} shelves` : "No shelves yet", onClick: onCollections },
+    { icon: Clock3, title: "Recently added", detail: added ? `${added} new titles` : "Waiting for a library", onClick: onAdded },
+    { icon: Server, title: link.label, detail: link.mode === "idle" ? "Connect a source" : "Ready to play", onClick: onLink },
+  ];
+  return (
+    <div className="os-deck">
+      {tiles.map((tile) => {
+        const Icon = tile.icon;
+        return (
+          <button key={tile.title} type="button" className="os-tile" onClick={tile.onClick}>
+            <span className="os-tile__icon" aria-hidden="true">
+              <Icon size={16} />
+            </span>
+            <span>
+              <b>{tile.title}</b>
+              <small>{tile.detail}</small>
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function OsDock({
+  link,
+  libraries,
+  continueWatching,
+  onPlay,
+  onOpen,
+  onAdd,
+  onAsk,
+  onShare,
+  onSettings,
+}: {
+  link: { mode: "local" | "relay" | "idle"; label: string; detail: string };
+  libraries: number;
+  continueWatching: Title[];
+  onPlay: (id: string) => void;
+  onOpen: (id: string) => void;
+  onAdd: () => void;
+  onAsk: () => void;
+  onShare: () => void;
+  onSettings: () => void;
+}) {
+  const actions = [
+    { icon: Plus, label: "Add library", onClick: onAdd },
+    { icon: Sparkles, label: "Ask this house", onClick: onAsk },
+    { icon: Share2, label: "Sharing", onClick: onShare },
+    { icon: Settings2, label: "Settings", onClick: onSettings },
+  ];
+  return (
+    <aside className="os-dock" aria-label="House status">
+      <section className="os-card">
+        <header>
+          <span className="net-dot" data-mode={link.mode} aria-hidden="true" />
+          Server
+        </header>
+        <b>{link.label}</b>
+        <small>{libraries ? `${libraries} ${libraries === 1 ? "library" : "libraries"}` : link.detail}</small>
+      </section>
+      <section className="os-card">
+        <header>Now in progress</header>
+        {continueWatching.length ? (
+          <ul className="os-now">
+            {continueWatching.slice(0, 3).map((title) => (
+              <li key={title.id}>
+                <button type="button" onClick={() => onOpen(title.id)}>
+                  <ArtImage src={title.still || title.poster} fallback="/stills/neon-alley.jpg" className="os-now__art" />
+                  <span>
+                    <b>{title.title}</b>
+                    <small>{title.runtime}</small>
+                  </span>
+                </button>
+                <button type="button" className="os-now__play" aria-label={`Play ${title.title}`} onClick={() => onPlay(title.id)}>
+                  <Play size={12} fill="currentColor" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <small>Start a title and it stays here.</small>
+        )}
+      </section>
+      <section className="os-card">
+        <header>Quick actions</header>
+        <div className="os-actions">
+          {actions.map((action) => {
+            const Icon = action.icon;
+            return (
+              <button key={action.label} type="button" onClick={action.onClick}>
+                <Icon size={15} />
+                {action.label}
+              </button>
+            );
+          })}
+        </div>
+      </section>
+    </aside>
+  );
+}
 
 function HeroActions({
   onPlay,
@@ -113,11 +246,14 @@ export function StageRoom() {
   const mood = useCinevo((s) => s.mood);
   const shufflePlay = useCinevo((s) => s.shufflePlay);
   const setCoreOpen = useCinevo((s) => s.setCoreOpen);
+  const setSettingsOpen = useCinevo((s) => s.setSettingsOpen);
   const setRoom = useCinevo((s) => s.setRoom);
   const sourceFilter = useCinevo((s) => s.sourceFilter);
   const setSourceFilter = useCinevo((s) => s.setSourceFilter);
   const setMood = useCinevo((s) => s.setMood);
   const sources = useCinevo((s) => s.sources);
+  const nodeUrl = useCinevo((s) => s.nodeUrl);
+  const nodeToken = useCinevo((s) => s.nodeToken);
   const plays = useCinevo((s) => s.plays);
   const collections = useCinevo((s) => s.collections);
   const hydrated = useCinevo((s) => s.hydrated);
@@ -154,6 +290,7 @@ export function StageRoom() {
     .filter((t): t is Title => Boolean(t));
 
   const still = hero?.still || "/stills/neon-alley.jpg";
+  const link = houseLink(sources, nodeUrl, nodeToken);
 
   return (
     <div className="house-home">
@@ -220,66 +357,91 @@ export function StageRoom() {
         </div>
       </section>
 
-      <div className="house-stage">
-        {library.length ? (
-          <>
-            <div className="house-filters">
-              {sources.length > 1 ? (
-                <div className="house-sources" role="tablist" aria-label="Sources">
-                  {SOURCES.map(([id, label]) => (
+      <div className="os-body">
+        <div className="house-stage">
+          {library.length ? (
+            <>
+              <div className="house-filters">
+                {sources.length > 1 ? (
+                  <div className="house-sources" role="tablist" aria-label="Sources">
+                    {SOURCES.map(([id, label]) => (
+                      <button
+                        key={id}
+                        type="button"
+                        role="tab"
+                        aria-selected={sourceFilter === id}
+                        onClick={() => setSourceFilter(id)}
+                        className={sourceFilter === id ? "house-chip is-on" : "house-chip"}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+                <div className="house-sources" role="tablist" aria-label="Mood">
+                  {MOODS.map((m) => (
                     <button
-                      key={id}
+                      key={m.id}
                       type="button"
                       role="tab"
-                      aria-selected={sourceFilter === id}
-                      onClick={() => setSourceFilter(id)}
-                      className={sourceFilter === id ? "house-chip is-on" : "house-chip"}
+                      aria-selected={mood === m.id}
+                      onClick={() => setMood(m.id)}
+                      className={mood === m.id ? "house-chip is-on" : "house-chip"}
                     >
-                      {label}
+                      {m.label}
                     </button>
                   ))}
                 </div>
-              ) : null}
-              <div className="house-sources" role="tablist" aria-label="Mood">
-                {MOODS.map((m) => (
-                  <button
-                    key={m.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={mood === m.id}
-                    onClick={() => setMood(m.id)}
-                    className={mood === m.id ? "house-chip is-on" : "house-chip"}
-                  >
-                    {m.label}
-                  </button>
-                ))}
               </div>
-            </div>
 
-            <div className="house-library">
-              <div className="house-rails">
-                {continueWatching.length ? <Rail heading="Continue watching" titles={continueWatching} wide /> : null}
-                {queued.length ? <Rail heading="Up next" titles={queued} wide /> : null}
-                {played.length ? <Rail heading="Most played here" titles={played} /> : null}
-                {added.length ? <Rail heading="Recently added" titles={added} /> : null}
-                {suggestions.length ? <Rail heading="For you" titles={suggestions} /> : null}
-                {myList.length ? <Rail heading="My List" titles={myList} /> : null}
-                {collections.map((collection) => {
-                  const titles = collection.titleIds
-                    .map((id) => library.find((title) => title.id === id))
-                    .filter((title): title is NonNullable<typeof title> => Boolean(title));
-                  if (!titles.length) return null;
-                  return <Rail key={collection.id} heading={collection.name} titles={titles} />;
-                })}
+              <div className="house-library">
+                <OsDeck
+                  watching={continueWatching.length}
+                  collections={collections.length}
+                  added={added.length}
+                  link={link}
+                  onWatch={() => (continueWatching[0] ? play(continueWatching[0].id) : setRoom("movies"))}
+                  onCollections={() => setRoom("movies")}
+                  onAdded={() => setRoom("movies")}
+                  onLink={() => setRoom("sidebar")}
+                />
+                <div className="house-rails">
+                  {continueWatching.length ? <Rail heading="Continue watching" titles={continueWatching} wide /> : null}
+                  {queued.length ? <Rail heading="Up next" titles={queued} wide /> : null}
+                  {played.length ? <Rail heading="Most played here" titles={played} /> : null}
+                  {added.length ? <Rail heading="Recently added" titles={added} /> : null}
+                  {suggestions.length ? <Rail heading="For you" titles={suggestions} /> : null}
+                  {myList.length ? <Rail heading="My List" titles={myList} /> : null}
+                  {collections.map((collection) => {
+                    const titles = collection.titleIds
+                      .map((id) => library.find((title) => title.id === id))
+                      .filter((title): title is NonNullable<typeof title> => Boolean(title));
+                    if (!titles.length) return null;
+                    return <Rail key={collection.id} heading={collection.name} titles={titles} />;
+                  })}
+                </div>
+                <PlatformArc quiet />
               </div>
-              <PlatformArc quiet />
+            </>
+          ) : (
+            <div className="house-library">
+              <PlatformArc />
             </div>
-          </>
-        ) : (
-          <div className="house-library">
-            <PlatformArc />
-          </div>
-        )}
+          )}
+        </div>
+        {library.length ? (
+          <OsDock
+            link={link}
+            libraries={sources.length}
+            continueWatching={continueWatching}
+            onPlay={play}
+            onOpen={openTitle}
+            onAdd={() => setRoom("sidebar")}
+            onAsk={() => setCoreOpen(true, "ai")}
+            onShare={() => setCoreOpen(true, "sharing")}
+            onSettings={() => setSettingsOpen(true)}
+          />
+        ) : null}
       </div>
     </div>
   );
@@ -297,38 +459,44 @@ export function BrowseRoom({ kind: initialKind = "all" }: { kind?: "all" | "movi
   const genres = genresIn(library);
   const heading = initialKind === "movie" ? "Movies" : initialKind === "series" ? "TV Shows" : "Browse";
   return (
-    <div className="house-page">
+    <div className="house-page library-os">
       <header>
         <BrandKicker>CINEVO library</BrandKicker>
         <h1>{heading}</h1>
-        <p className="lede">Find something worth disappearing into.</p>
+        <p className="lede">A poster wall you can filter, sort, and switch between grid, list, and hybrid.</p>
       </header>
-      <div className="house-sources mb-4">
-        {(["all", "movie", "series"] as const).map((k) => (
-          <button
-            key={k}
-            type="button"
-            onClick={() => setKind(k)}
-            className={kind === k ? "house-chip is-on" : "house-chip"}
-          >
-            {k === "all" ? "All" : k === "movie" ? "Movies" : "Series"}
-          </button>
-        ))}
-      </div>
-      {genres.length > 1 ? (
-        <div className="house-sources mb-8">
-          {genres.map((g) => (
+      <div className="command-strip">
+        <div className="house-sources" role="tablist" aria-label="Kind">
+          {(["all", "movie", "series"] as const).map((k) => (
             <button
-              key={g}
+              key={k}
               type="button"
-              onClick={() => setGenre(g)}
-              className={genre === g ? "house-chip is-on" : "house-chip"}
+              role="tab"
+              aria-selected={kind === k}
+              onClick={() => setKind(k)}
+              className={kind === k ? "house-chip is-on" : "house-chip"}
             >
-              {g}
+              {k === "all" ? "All" : k === "movie" ? "Movies" : "Series"}
             </button>
           ))}
         </div>
-      ) : null}
+        {genres.length > 1 ? (
+          <div className="house-sources" role="tablist" aria-label="Genre">
+            {genres.map((g) => (
+              <button
+                key={g}
+                type="button"
+                role="tab"
+                aria-selected={genre === g}
+                onClick={() => setGenre(g)}
+                className={genre === g ? "house-chip is-on" : "house-chip"}
+              >
+                {g}
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
       <LibraryBoard
         titles={titles}
         empty="No titles yet. Import a library from Plex, Jellyfin, a folder, or Node."

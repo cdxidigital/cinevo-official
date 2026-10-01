@@ -82,6 +82,11 @@ function verifyBinary(file, kind) {
     const ok = [0xfeedface, 0xfeedfacf, 0xcafebabe, 0xcffaedfe, 0xcefaedfe].includes(magic);
     if (!ok) throw new Error(`${file} is not a Mach-O executable`);
   }
+  if (kind === "elf") {
+    if (buf[0] !== 0x7f || buf[1] !== 0x45 || buf[2] !== 0x4c || buf[3] !== 0x46) {
+      throw new Error(`${file} is not an ELF executable`);
+    }
+  }
   console.log(`verified ${kind}: ${path.basename(file)} (${buf.length} bytes)`);
 }
 
@@ -111,8 +116,8 @@ function brandWindowsExe(exePath) {
       {
         FileDescription: "CINEVO Node — private loopback companion",
         ProductName: "CINEVO Node",
-        CompanyName: "CINEVO",
-        LegalCopyright: "CINEVO",
+        CompanyName: "CDXI",
+        LegalCopyright: "CDXI. Distributed as a Fourtee2 Digital project.",
         OriginalFilename: "cinevo-node.exe",
         InternalName: "cinevo-node",
         FileVersion: VERSION,
@@ -347,6 +352,112 @@ function wrapMac(binary, archLabel, arch) {
   write(path.join(dist, `mac-${archLabel}`, "README.txt"), MAC_README);
 }
 
+const LINUX_README = `CINEVO Node for Linux and NAS (x64)
+=====================================
+
+Private companion for a home server, Unraid, TrueNAS, Synology, or a
+Linux PC. Files stay on this machine. Pairing is required.
+
+This package listens on the home network (0.0.0.0:48184) so CINEVO on
+another computer can reach it. Do not forward port 48184 to the internet.
+
+Install
+  Unzip, then:
+    sudo sh install.sh
+
+  Without root, the same script installs into your home folder.
+
+Then open http://NAS-IP:48184 and enter the pairing code in CINEVO.
+
+Uninstall
+  sudo systemctl disable --now cinevo-node
+  sudo rm -rf /opt/cinevo-node /etc/systemd/system/cinevo-node.service
+  sudo systemctl daemon-reload
+`;
+
+const LINUX_SERVICE = `[Unit]
+Description=CINEVO Node
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+Environment=CINEVO_NODE_HOST=0.0.0.0
+Environment=CINEVO_NODE_PORT=48184
+ExecStart=/opt/cinevo-node/cinevo-node --no-open
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+`;
+
+const LINUX_INSTALL = `#!/bin/sh
+set -eu
+HERE=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+BIN="$HERE/cinevo-node"
+if [ ! -f "$BIN" ]; then
+  echo "cinevo-node is missing from this folder." >&2
+  exit 1
+fi
+if [ "$(uname -s)" != "Linux" ]; then
+  echo "This installer is for Linux and NAS." >&2
+  exit 1
+fi
+chmod 755 "$BIN"
+
+install_unit() {
+  dest="$1"
+  unit="$2"
+  sed "s#/opt/cinevo-node#$dest#g" "$HERE/cinevo-node.service" > "$unit"
+}
+
+if [ "$(id -u)" -eq 0 ]; then
+  DEST=/opt/cinevo-node
+  install -d -m 755 "$DEST"
+  install -m 755 "$BIN" "$DEST/cinevo-node"
+  if [ -f "$HERE/icon.png" ]; then install -m 644 "$HERE/icon.png" "$DEST/icon.png"; fi
+  if command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ]; then
+    install_unit "$DEST" /etc/systemd/system/cinevo-node.service
+    systemctl daemon-reload
+    systemctl enable --now cinevo-node.service
+    echo "CINEVO Node service is running."
+  else
+    CINEVO_NODE_HOST=0.0.0.0 nohup "$DEST/cinevo-node" --no-open >/var/log/cinevo-node.log 2>&1 &
+    echo "Started without systemd. Log: /var/log/cinevo-node.log"
+  fi
+else
+  DEST="$HOME/.local/share/cinevo-node"
+  mkdir -p "$DEST"
+  cp "$BIN" "$DEST/cinevo-node"
+  chmod 755 "$DEST/cinevo-node"
+  if [ -f "$HERE/icon.png" ]; then cp "$HERE/icon.png" "$DEST/icon.png"; fi
+  if command -v systemctl >/dev/null 2>&1; then
+    mkdir -p "$HOME/.config/systemd/user"
+    install_unit "$DEST" "$HOME/.config/systemd/user/cinevo-node.service"
+    systemctl --user daemon-reload || true
+    systemctl --user enable --now cinevo-node.service || CINEVO_NODE_HOST=0.0.0.0 nohup "$DEST/cinevo-node" --no-open >/tmp/cinevo-node.log 2>&1 &
+  else
+    CINEVO_NODE_HOST=0.0.0.0 nohup "$DEST/cinevo-node" --no-open >/tmp/cinevo-node.log 2>&1 &
+  fi
+  echo "Installed for $(id -un) at $DEST"
+fi
+echo "Dashboard: http://THIS-MACHINE:48184"
+echo "Pair that code in CINEVO. Do not port-forward 48184."
+`;
+
+function wrapLinux(binary) {
+  const dir = path.join(dist, "linux-x64");
+  fs.mkdirSync(dir, { recursive: true });
+  fs.copyFileSync(binary, path.join(dir, "cinevo-node"));
+  fs.chmodSync(path.join(dir, "cinevo-node"), 0o755);
+  fs.copyFileSync(path.join(brand, "icon-256.png"), path.join(dir, "icon.png"));
+  write(path.join(dir, "cinevo-node.service"), LINUX_SERVICE);
+  write(path.join(dir, "install.sh"), LINUX_INSTALL, 0o755);
+  write(path.join(dir, "README.txt"), LINUX_README);
+  return dir;
+}
+
 console.log("Packaging CINEVO Node executables…");
 runPkg();
 
@@ -362,9 +473,11 @@ function findOut(fragment) {
 const winExe = findOut("win-x64");
 const macX64 = findOut("macos-x64");
 const macArm = findOut("macos-arm64");
+const linuxX64 = findOut("linux-x64");
 verifyBinary(winExe, "pe");
 verifyBinary(macX64, "macho");
 verifyBinary(macArm, "macho");
+verifyBinary(linuxX64, "elf");
 
 brandWindowsExe(winExe);
 signWindows(winExe);
@@ -381,11 +494,13 @@ write(path.join(winDir, "README.txt"), WIN_README);
 
 wrapMac(macArm, "arm64", "arm64");
 wrapMac(macX64, "intel", "x86_64");
+const linuxDir = wrapLinux(linuxX64);
 
 const zips = [
   [winDir, path.join(out, "CINEVO-Node-Windows-x64.zip")],
   [path.join(dist, "mac-arm64"), path.join(out, "CINEVO-Node-macOS-Apple-Silicon.zip")],
   [path.join(dist, "mac-intel"), path.join(out, "CINEVO-Node-macOS-Intel.zip")],
+  [linuxDir, path.join(out, "CINEVO-Node-Linux-x64.zip")],
 ];
 for (const [src, zip] of zips) {
   zipDir(src, zip);
@@ -401,11 +516,13 @@ const manifest = {
   signed: {
     windows: "authenticode:CINEVO Node",
     mac: "ad-hoc Mach-O signature via ldid + AppIcon.icns",
+    linux: "ELF x64 for Linux and NAS",
   },
   installers: {
     windowsX64: "/installers/CINEVO-Node-Windows-x64.zip",
     macAppleSilicon: "/installers/CINEVO-Node-macOS-Apple-Silicon.zip",
     macIntel: "/installers/CINEVO-Node-macOS-Intel.zip",
+    linuxX64: "/installers/CINEVO-Node-Linux-x64.zip",
   },
 };
 fs.writeFileSync(path.join(out, "manifest.json"), JSON.stringify(manifest, null, 2));

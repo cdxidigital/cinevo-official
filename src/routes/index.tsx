@@ -1,10 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowDownRight, ArrowRight, Check, Play, ShieldCheck } from "lucide-react";
+import { ArrowDownRight, Play, ShieldCheck } from "lucide-react";
+import { InstallCinevo } from "@/components/cinevo/house-remote";
 import { InstallerCards, PhoneApps } from "@/components/cinevo/installers";
 import { Logo, Mark } from "@/components/cinevo/logo";
 import { LandingAuth } from "@/components/cinevo/account";
-import { Reveal, useParallax } from "@/components/cinevo/cine-motion";
+import { Reveal } from "@/components/cinevo/cine-motion";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
+import { useCinevo } from "@/lib/cinevo-store";
+import { THEMES } from "@/lib/library";
 
 export const Route = createFileRoute("/")({ component: Home });
 
@@ -17,35 +20,21 @@ const STEPS = [
 const HIGHLIGHTS = [
   {
     n: "01",
-    eyebrow: "PRIVATE LIBRARIES",
-    title: "Choose exactly what belongs in view.",
-    description: "Folders, Plex, or Jellyfin. Select the sections CINEVO may index. Playback is proxied through CINEVO for servers you own.",
-    action: "Set up libraries",
-    search: { room: "library" as const },
+    eyebrow: "YOUR FILES",
+    title: "One library, still yours.",
+    description: "Folders, Plex, Jellyfin, or the CINEVO server. You choose the sections. Nothing is published.",
   },
   {
     n: "02",
-    eyebrow: "FRIEND SHARING",
-    title: "Share with care, never by default.",
-    description: "Invite by CINEVO username. Share Plex and Jellyfin catalogs — never the files. Playback stays on the original server.",
-    action: "Manage sharing",
-    search: { core: "sharing" as const },
+    eyebrow: "EVERY SCREEN",
+    title: "Watch, cast, or remote.",
+    description: "The player is the same on the web, a phone, and a television. The server stays with the files.",
   },
   {
     n: "03",
-    eyebrow: "CINEVO CORE",
-    title: "A quieter way to care for your collection.",
-    description: "Library health, setup, and consent — without turning private media into a social performance.",
-    action: "Explore Core",
-    search: { core: "libraries" as const },
-  },
-  {
-    n: "04",
-    eyebrow: "CONSENT-LED AI",
-    title: "Thoughtful suggestions on your terms.",
-    description: "Ask only the titles already in this house. Nothing leaves until you opt in.",
-    action: "See AI controls",
-    search: { core: "ai" as const },
+    eyebrow: "EIGHT GLASS HOUSES",
+    title: "A theme that stays readable.",
+    description: "Pick a glass look. Titles, buttons, and the CINEVO mark keep their contrast on every page.",
   },
 ];
 
@@ -66,7 +55,8 @@ function EnterHouse({ className = "public-primary", label = "Enter CINEVO" }: { 
 }
 
 function Home() {
-  const chapterStill = useParallax(32);
+  const theme = useCinevo((s) => s.prefs.theme);
+  const setTheme = useCinevo((s) => s.setTheme);
 
   return (
     <div className="public-home">
@@ -75,7 +65,7 @@ function Home() {
           <Link to="/app" search={{ room: "library" }}>
             Your library
           </Link>
-          <Link to="/node">Node</Link>
+          <Link to="/node">Server</Link>
           <Link to="/help">Help</Link>
         </nav>
         <div className="public-nav__actions">
@@ -94,8 +84,7 @@ function Home() {
               <em>Your moment.</em>
             </h1>
             <p>
-              The libraries you control, in one private house. Folders, Plex, and Jellyfin — shared by username, never
-              published.
+              A private cinema for the libraries you already own. Play them here, cast them to a server, or hand the remote to your phone.
             </p>
             <div className="public-hero__actions">
               <EnterHouse label="Play your library" />
@@ -116,11 +105,27 @@ function Home() {
         <section className="home-reel" aria-labelledby="home-reel-title">
           <Reveal as="header">
             <div>
-              <span className="public-kicker">START WITH YOUR LIBRARY</span>
-              <h2 id="home-reel-title">Nothing appears here until you choose it.</h2>
+              <span className="public-kicker">GLASS THEMES</span>
+              <h2 id="home-reel-title">Choose the house. The type stays clear.</h2>
             </div>
-            <p>CINEVO never fills your library with sample media or imported catalogue data.</p>
+            <p>Eight looks. Same layout. Titles, buttons, and the mark stay easy to read.</p>
           </Reveal>
+          <div className="theme-rail" role="listbox" aria-label="Glass themes">
+            {THEMES.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                role="option"
+                aria-selected={theme === item.id}
+                className={theme === item.id ? "is-on" : undefined}
+                onClick={() => setTheme(item.id)}
+              >
+                <i className="swatch" data-swatch={item.id} />
+                <b>{item.label}</b>
+                <small>{item.feel}</small>
+              </button>
+            ))}
+          </div>
           <div className="home-library-steps">
             {STEPS.map((step, i) => (
               <Reveal key={step.n} as="article" delay={i * 90}>
@@ -132,72 +137,20 @@ function Home() {
           </div>
         </section>
 
-        <section className="public-chapter" id="libraries">
-          <img ref={chapterStill} src="/stills/doorway.jpg" alt="" className="public-chapter__still" />
-          <div className="public-chapter__veil" />
-          <div className="home-manifesto">
-            <Reveal className="home-manifesto__intro">
-              <span className="public-kicker">THE PRIVATE MEDIA OS</span>
-              <h2>
-                Every library is personal.
-                <br />
-                <em>So CINEVO starts with permission.</em>
-              </h2>
-              <p>
-                Bring together the media you own and host without turning it into someone else’s platform. Folders on this
-                computer. Plex at home or remote. Jellyfin from the library wizard.
-              </p>
-              <Link to="/app" search={{ room: "library" }} className="public-text-link">
-                Connect a library <ArrowRight size={15} />
-              </Link>
-            </Reveal>
-            <Reveal className="home-manifesto__rules" delay={120}>
-              <div>
-                <Check size={17} />
-                <span>
-                  <b>Select libraries deliberately</b>
-                  <small>Choose the individual sections CINEVO can see.</small>
-                </span>
-              </div>
-              <div>
-                <Check size={17} />
-                <span>
-                  <b>Keep sharing intentional</b>
-                  <small>Invite by username. Share the catalog, not the files.</small>
-                </span>
-              </div>
-              <div>
-                <Check size={17} />
-                <span>
-                  <b>Stay in control of AI</b>
-                  <small>Opt in and set the metadata scope for each request.</small>
-                </span>
-              </div>
-            </Reveal>
-          </div>
-        </section>
-
         <section className="home-highlights" id="sharing" aria-labelledby="home-highlights-title">
           <Reveal as="header">
-            <span className="public-kicker">A MORE CONSIDERED MEDIA LIFE</span>
-            <h2 id="home-highlights-title">
-              Everything useful.
-              <br />
-              Nothing extractive.
-            </h2>
+            <span className="public-kicker">WHAT YOU GET</span>
+            <h2 id="home-highlights-title">A quieter way in.</h2>
           </Reveal>
           <div className="home-highlights__grid">
             {HIGHLIGHTS.map((item, i) => (
               <Reveal key={item.n} delay={i * 70}>
-                <Link to="/app" search={item.search} className="home-highlight">
+                <article className="home-highlight">
                   <span>{item.n}</span>
                   <em>{item.eyebrow}</em>
                   <h3>{item.title}</h3>
                   <p>{item.description}</p>
-                  <b>
-                    {item.action} <ArrowRight size={14} />
-                  </b>
-                </Link>
+                </article>
               </Reveal>
             ))}
           </div>
@@ -205,22 +158,27 @@ function Home() {
 
         <section className="home-downloads" id="downloads">
           <Reveal>
-            <span className="public-kicker">CINEVO NODE</span>
-            <h2 className="mt-4 font-ui text-4xl font-semibold leading-tight tracking-tight md:text-5xl">The projector lives at home.</h2>
+            <span className="public-kicker">TWO APPS</span>
+            <h2 className="mt-4 font-ui text-4xl font-semibold leading-tight tracking-tight md:text-5xl">Server at home. Player everywhere.</h2>
             <p className="mt-4 mb-10 max-w-xl text-sm text-cine-muted">
-              Install Node on the computer that holds the files. Pair once. Jellyfin and disk paths stay on loopback.
+              CINEVO Server stays on the computer that holds the files. CINEVO is the player — the web app, Android, and iPhone.
             </p>
           </Reveal>
-          <Reveal delay={80}>
+          <Reveal delay={40}>
+            <p className="public-kicker">CINEVO SERVER</p>
+            <h2 className="mt-3 mb-5 font-ui text-2xl font-semibold tracking-tight">Install where the library lives.</h2>
             <InstallerCards />
           </Reveal>
           <Reveal delay={120}>
-            <p className="public-kicker mt-14">PHONE REMOTE</p>
-            <h2 className="mt-4 font-ui text-3xl font-semibold tracking-tight md:text-4xl">Android, and current iPhone.</h2>
+            <p className="public-kicker mt-14">CINEVO PLAYER</p>
+            <h2 className="mt-4 font-ui text-3xl font-semibold tracking-tight md:text-4xl">One player. Every screen.</h2>
             <p className="mt-3 mb-6 max-w-xl text-sm text-cine-muted">
-              The phone controls the house. It does not play the file. Cast and AirPlay stay on the screen that has the video.
+              Plex splits playback into a desktop app, an HTPC app, a website, and store-only phone apps. CINEVO is one installable player. Offline install is not a paid pass. The files stay on the server.
             </p>
-            <PhoneApps />
+            <InstallCinevo />
+            <div className="mt-6">
+              <PhoneApps />
+            </div>
           </Reveal>
         </section>
 
@@ -247,9 +205,9 @@ function Home() {
           <Logo size="lg" layout="stacked" />
         </Link>
         <div>
-          <p>Cinema, reinvented. Your media. Your moment.</p>
+          <p>Created by CDXI. Distributed as a Fourtee2 Digital project.</p>
           <nav className="public-footer__links" aria-label="More">
-            <Link to="/node">Node</Link>
+            <Link to="/node">Server</Link>
             <Link to="/help">Help</Link>
             <Link to="/legal/privacy">Privacy</Link>
             <Link to="/legal/terms">Terms</Link>

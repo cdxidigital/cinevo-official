@@ -3,6 +3,7 @@ import { InstallCinevo, rememberInstallPrompt } from "./house-remote";
 
 export function Pwa() {
   const [dismissed, setDismissed] = useState(true);
+  const [offer, setOffer] = useState(false);
 
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
@@ -19,14 +20,20 @@ export function Pwa() {
       event.preventDefault();
       rememberInstallPrompt(event as Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: "accepted" | "dismissed" }> });
     };
+    const onReady = () => setOffer(true);
     window.addEventListener("beforeinstallprompt", onPrompt);
-    return () => window.removeEventListener("beforeinstallprompt", onPrompt);
+    window.addEventListener("cinevo-install", onReady);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", onPrompt);
+      window.removeEventListener("cinevo-install", onReady);
+    };
   }, []);
 
   if (dismissed) return null;
   const path = window.location.pathname;
   if (path !== "/") return null;
-  if (window.matchMedia("(min-width: 900px)").matches) return null;
+  const wide = window.matchMedia("(min-width: 900px)").matches;
+  if (wide && !offer) return null;
 
   return (
     <div className="install-bar">

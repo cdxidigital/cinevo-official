@@ -13,11 +13,14 @@ test("parseFilename reads title and year", () => {
 });
 
 test("migrateTheme maps legacy ids", () => {
-  assert.equal(migrateTheme("nova"), "pulse");
+  assert.equal(migrateTheme("nova"), "harbor");
+  assert.equal(migrateTheme("pulse"), "harbor");
+  assert.equal(migrateTheme("noir"), "ink");
   assert.equal(migrateTheme("iris"), "day");
   assert.equal(migrateTheme("paper"), "day");
+  assert.equal(migrateTheme("sage"), "grove");
   assert.equal(migrateTheme("ember"), "ember");
-  assert.equal(migrateTheme("unknown"), "noir");
+  assert.equal(migrateTheme("unknown"), "harbor");
 });
 
 function stub(id: string, source: LibraryTitle["source"]): LibraryTitle {

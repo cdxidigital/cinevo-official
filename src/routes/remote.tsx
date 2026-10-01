@@ -20,6 +20,102 @@ export const Route = createFileRoute("/remote")({
 
 const PHONE_CODE = "cinevo-phone-code";
 
+function CastNode() {
+  const [base, setBase] = useState(() => {
+    try {
+      return localStorage.getItem("cinevo-cast-base") || "";
+    } catch {
+      return "";
+    }
+  });
+  const [castCode, setCastCode] = useState("");
+  const [titles, setTitles] = useState<{ id: string; title: string }[]>([]);
+  const [message, setMessage] = useState("");
+
+  const origin = base.trim().replace(/\/$/, "");
+
+  const load = async (event?: React.FormEvent) => {
+    event?.preventDefault();
+    setMessage("");
+    if (!/^https?:\/\//.test(origin)) {
+      setMessage("Use the server address, like http://192.168.1.20:48184");
+      return;
+    }
+    try {
+      localStorage.setItem("cinevo-cast-base", origin);
+    } catch {
+      /* ignore */
+    }
+    try {
+      const res = await fetch(`${origin}/v1/receiver`);
+      const data = (await res.json()) as { titles?: { id: string; title: string }[]; error?: string };
+      if (!res.ok) {
+        setMessage(data.error || "That server did not answer.");
+        return;
+      }
+      setTitles(Array.isArray(data.titles) ? data.titles : []);
+      setMessage(data.titles?.length ? "Server found. Enter the cast code shown on its screen." : "Server found. Scan a folder on it, then cast.");
+    } catch {
+      setMessage("Could not reach that server. Use the phone app on the same Wi-Fi.");
+    }
+  };
+
+  const cast = async (body: Record<string, string | number>) => {
+    if (normalizeCode(castCode).length !== 6) {
+      setMessage("Enter the cast code from the server screen.");
+      return;
+    }
+    try {
+      const res = await fetch(`${origin}/v1/cast`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ ...body, code: castCode }),
+      });
+      const data = (await res.json()) as { error?: string };
+      setMessage(res.ok ? "Sent to the server." : data.error || "The server refused that.");
+    } catch {
+      setMessage("Could not reach that server.");
+    }
+  };
+
+  return (
+    <section className="remote-join glass-strong">
+      <h2>Cast to a server</h2>
+      <p>Windows, Mac, Linux, and NAS. Open the receiver on that computer and use the cast code.</p>
+      <form onSubmit={(event) => void load(event)}>
+        <label>
+          Server
+          <input value={base} placeholder="http://192.168.1.20:48184" onChange={(event) => setBase(event.target.value)} />
+        </label>
+        <label>
+          Cast code
+          <input value={castCode} autoCapitalize="characters" placeholder="ABC-DEF" onChange={(event) => setCastCode(event.target.value.toUpperCase())} />
+        </label>
+        <button type="submit" className="house-btn">
+          Find server
+        </button>
+      </form>
+      {message ? <p>{message}</p> : null}
+      <div className="remote-transport">
+        <button type="button" onClick={() => void cast({ type: "pause" })}>Pause</button>
+        <button type="button" onClick={() => void cast({ type: "play" })}>Play</button>
+        <button type="button" onClick={() => void cast({ type: "seek", by: 10 })}>Forward</button>
+      </div>
+      {titles.length ? (
+        <ul className="remote-titles">
+          {titles.slice(0, 12).map((item) => (
+            <li key={item.id}>
+              <button type="button" onClick={() => void cast({ type: "playTitle", titleId: item.id })}>
+                {item.title}
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </section>
+  );
+}
+
 function RemotePage() {
   const [draft, setDraft] = useState("");
   const [code, setCode] = useState("");
@@ -103,7 +199,7 @@ function RemotePage() {
       {!code ? (
         <form className="remote-join glass-strong" onSubmit={join}>
           <h1>Control the house</h1>
-          <p>This remote controls the house. It does not play or cast. Cast and AirPlay are on the screen that has the video.</p>
+          <p>This remote controls a CINEVO screen, and it can cast to a CINEVO Server on your network.</p>
           <label>
             House code
             <input
@@ -207,11 +303,12 @@ function RemotePage() {
       )}
 
       <footer className="remote-app__foot">
+        <CastNode />
         <InstallCinevo compact />
-        <p className="remote-app__kicker">Get the remote</p>
+        <p className="remote-app__kicker">Get the player</p>
         <PhoneApps />
         <p>
-          Android is a sideload APK, not a Play Store app. The iPhone profile adds a CINEVO icon for this house. A localhost address will not open from the phone.
+          Android and Android TV are sideload apps. The iPhone profile installs the same player on the Home Screen. It watches, casts, and remotes. A localhost address will not open from the phone.
         </p>
       </footer>
     </main>

@@ -18,6 +18,7 @@ export function SharePanel() {
   const [incoming, setIncoming] = useState<ShareRow[]>([]);
   const [pending, setPending] = useState(false);
   const [link, setLink] = useState("");
+  const [guestName, setGuestName] = useState("");
 
   const load = async () => {
     try {
@@ -79,11 +80,35 @@ export function SharePanel() {
       }
       const url = `${window.location.origin}/s/${created.token}`;
       setLink(url);
-      await navigator.clipboard?.writeText(url).catch(() => undefined);
+      setGuestName(found.username);
       flash(`Invite sent to @${found.username}`);
       await load();
     } finally {
       setPending(false);
+    }
+  };
+
+  const shareLink = async () => {
+    if (!link) return;
+    const data = {
+      title: "CINEVO",
+      text: `A CINEVO library invite for @${guestName || guest.replace(/^@/, "")}`,
+      url: link,
+    };
+    const canShare = typeof navigator.share === "function" && (typeof navigator.canShare !== "function" || navigator.canShare(data));
+    if (canShare) {
+      try {
+        await navigator.share(data);
+        return;
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(link);
+      flash("Invite link copied");
+    } catch {
+      flash("Copy the invite link below");
     }
   };
 
@@ -149,7 +174,12 @@ export function SharePanel() {
           </button>
         </div>
         {link ? (
-          <p className="break-all rounded-lg bg-cine-surface px-3 py-2 font-mono text-xs text-cine-cyan">{link}</p>
+          <div className="grid gap-2">
+            <p className="break-all rounded-lg bg-cine-surface px-3 py-2 font-mono text-xs text-cine-cyan">{link}</p>
+            <button type="button" className="house-btn h-11" onClick={() => void shareLink()}>
+              Share invite
+            </button>
+          </div>
         ) : null}
         {outgoing.length ? (
           <div className="space-y-2">

@@ -24,10 +24,11 @@ async function waitReady(child) {
     const t = setTimeout(() => reject(new Error("node did not start")), 8000);
     child.stdout.on("data", (c) => {
       buf += c.toString();
-      if (buf.includes("Pairing code:")) {
+      if (buf.includes("Pairing code:") && buf.includes("Cast code:")) {
         clearTimeout(t);
-        const m = /Pairing code: ([A-Z0-9-]+)/.exec(buf);
-        resolve(m ? m[1] : "");
+        const pair = /Pairing code: ([A-Z0-9-]+)/.exec(buf);
+        const cast = /Cast code: ([A-Z0-9-]+)/.exec(buf);
+        resolve({ pair: pair ? pair[1] : "", cast: cast ? cast[1] : "" });
       }
     });
     child.stderr.on("data", (c) => {
@@ -40,7 +41,8 @@ async function waitReady(child) {
 test("loopback health, pair, and 401 without bearer", async (t) => {
   const child = start();
   t.after(() => child.kill("SIGTERM"));
-  const code = await waitReady(child);
+  const codes = await waitReady(child);
+  const code = codes.pair;
   const base = `http://127.0.0.1:${PORT}`;
 
   const health = await (await fetch(`${base}/health`)).json();
@@ -96,6 +98,10 @@ test("loopback health, pair, and 401 without bearer", async (t) => {
   assert.equal(listed.count, 1);
   const title = listed.titles[0];
   assert.ok(title.path);
+  assert.equal(title.year, "2024");
+  assert.equal(title.title, "Demo Movie");
+  assert.match(title.poster, /^data:image\/svg\+xml/);
+  assert.match(decodeURIComponent(title.poster), /Demo Movie/);
 
   const deniedPlay = await fetch(`${base}/v1/play?path=${encodeURIComponent(title.path)}`);
   assert.equal(deniedPlay.status, 401);
@@ -112,5 +118,23 @@ test("loopback health, pair, and 401 without bearer", async (t) => {
   });
   assert.equal(ranged.status, 206);
   assert.equal(Buffer.from(await ranged.arrayBuffer()).toString(), "CINEVO");
+
+  const deniedCast = await fetch(`${base}/v1/cast`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code: "NOPE00", type: "pause" }),
+  });
+  assert.equal(deniedCast.status, 401);
+  const cast = await fetch(`${base}/v1/cast`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code: codes.cast, type: "pause" }),
+  });
+  assert.equal(cast.status, 200);
+  const polled = await (await fetch(`${base}/v1/receiver/poll?code=${encodeURIComponent(codes.cast)}`)).json();
+  assert.equal(polled.commands[0].type, "pause");
+  const page = await fetch(`${base}/receiver`);
+  assert.equal(page.status, 200);
+  assert.match(await page.text(), /Ready to cast/);
 });
 

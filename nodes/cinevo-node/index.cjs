@@ -9,8 +9,13 @@ const crypto = require("node:crypto");
 const { exec } = require("node:child_process");
 
 const VERSION = "0.3.0";
-const HOST = "127.0.0.1";
 const PORT = Number(process.env.CINEVO_NODE_PORT || 48184);
+function bindHost() {
+  const raw = String(process.env.CINEVO_NODE_HOST || "127.0.0.1").trim();
+  if (!/^[A-Za-z0-9.:-]{1,80}$/.test(raw)) return "127.0.0.1";
+  return raw;
+}
+const HOST = bindHost();
 const CODE_TTL_MS = 10 * 60 * 1000;
 const SESSION_TTL_MS = 4 * 60 * 60 * 1000;
 
@@ -38,6 +43,9 @@ function loadConfig() {
       connections: [],
       selectedLibraries: [],
       folders: [],
+  library: [],
+  castCode: "",
+  castExpires: 0,
     };
   }
 }
@@ -69,6 +77,31 @@ const state = {
 };
 
 saveConfig(state.config);
+
+function ensureCastCode() {
+  if (!state.config.castCode || !state.config.castExpires || Date.now() > state.config.castExpires) {
+    state.config.castCode = makeCode();
+    state.config.castExpires = Date.now() + 12 * 60 * 60 * 1000;
+    saveConfig(state.config);
+  }
+  return state.config.castCode;
+}
+
+function castMatches(input) {
+  const raw = String(input || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const current = String(ensureCastCode()).replace(/[^A-Z0-9]/g, "");
+  return Boolean(raw) && raw === current && Date.now() < state.config.castExpires;
+}
+
+const receiver = {
+  queue: [],
+  now: { title: "", detail: "", playing: false, position: 0, volume: 1, titleId: "" },
+};
+
+function libraryItem(id) {
+  const rows = Array.isArray(state.config.library) ? state.config.library : [];
+  return rows.find((item) => item && item.id === id) || null;
+}
 
 function rotateCode() {
   state.code = makeCode();
@@ -253,6 +286,112 @@ function brandPng() {
   return null;
 }
 
+function receiverHtml() {
+  const code = ensureCastCode();
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CINEVO Receiver</title>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: #050505; color: #f5f5f5; font-family: Inter, system-ui, sans-serif; }
+    body { min-height: 100dvh; display: flex; flex-direction: column; }
+    header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: clamp(0.75rem, 2vw, 1.25rem) clamp(1rem, 3vw, 2rem); }
+    .brand { font-weight: 800; letter-spacing: 0.14em; font-size: clamp(0.8rem, 2vw, 1rem); }
+    .code { color: #55cfff; font-weight: 800; letter-spacing: 0.18em; font-size: clamp(1.1rem, 3vw, 1.8rem); }
+    main { flex: 1; display: grid; place-items: center; padding: clamp(0.75rem, 2vw, 1.5rem); }
+    video { width: min(100%, 1100px); max-height: 72dvh; background: #000; border-radius: 16px; }
+    .idle { text-align: center; max-width: 36rem; }
+    h1 { font-size: clamp(1.8rem, 5vw, 3.4rem); letter-spacing: -0.04em; margin: 0.2rem 0; }
+    p { color: #a3a3a3; }
+    .keys { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; margin-top: 1rem; }
+    button { min-height: 48px; min-width: 48px; border-radius: 12px; border: 1px solid rgba(255,255,255,.16); background: #141414; color: #fff; font: inherit; padding: 0 1rem; }
+    button:focus-visible { outline: 2px solid #55cfff; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">CINEVO</div>
+    <div class="code" id="code">${escapeHtml(code)}</div>
+  </header>
+  <main>
+    <div class="idle" id="idle">
+      <p>RECEIVER</p>
+      <h1>Ready to cast</h1>
+      <p>Use this code in the CINEVO phone app. A TV remote can play, pause, and skip.</p>
+      <div class="keys">
+        <button type="button" id="back" data-key="left">Back</button>
+        <button type="button" id="play" data-key="enter">Play</button>
+        <button type="button" id="fwd" data-key="right">Forward</button>
+      </div>
+    </div>
+    <video id="player" controls playsinline hidden></video>
+  </main>
+  <script>
+    const code = document.getElementById("code").textContent.trim();
+    const video = document.getElementById("player");
+    const idle = document.getElementById("idle");
+    let titleId = "";
+    function showVideo(on) {
+      video.hidden = !on;
+      idle.hidden = on;
+    }
+    async function report() {
+      const position = video.duration ? Math.round((video.currentTime / video.duration) * 100) : 0;
+      await fetch("/v1/receiver/now", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          code,
+          now: { title: video.dataset.title || "", detail: "On this server", playing: !video.paused && !video.ended, position, volume: video.volume, titleId },
+        }),
+      }).catch(() => {});
+    }
+    async function playId(id, title) {
+      titleId = id;
+      video.dataset.title = title || "CINEVO";
+      video.src = "/v1/receiver/stream?code=" + encodeURIComponent(code) + "&id=" + encodeURIComponent(id);
+      showVideo(true);
+      try { await video.play(); } catch (e) {}
+      report();
+    }
+    async function poll() {
+      const res = await fetch("/v1/receiver/poll?code=" + encodeURIComponent(code));
+      if (!res.ok) return;
+      const data = await res.json();
+      for (const command of data.commands || []) {
+        if (command.type === "playTitle") playId(command.titleId, command.title);
+        if (command.type === "play") video.play().catch(() => {});
+        if (command.type === "pause") video.pause();
+        if (command.type === "toggle") video.paused ? video.play().catch(() => {}) : video.pause();
+        if (command.type === "stop") { video.pause(); video.currentTime = 0; showVideo(false); }
+        if (command.type === "seek" && video.duration) {
+          if (typeof command.to === "number") video.currentTime = (command.to / 100) * video.duration;
+          if (typeof command.by === "number") video.currentTime = Math.max(0, video.currentTime + command.by);
+        }
+        if (command.type === "volume") video.volume = command.value;
+      }
+    }
+    document.getElementById("play").onclick = () => video.paused ? video.play().catch(() => {}) : video.pause();
+    document.getElementById("back").onclick = () => { if (video.duration) video.currentTime = Math.max(0, video.currentTime - 10); };
+    document.getElementById("fwd").onclick = () => { if (video.duration) video.currentTime = Math.min(video.duration, video.currentTime + 10); };
+    window.addEventListener("keydown", (event) => {
+      const key = event.key;
+      if (key === "Enter" || key === " ") { event.preventDefault(); document.getElementById("play").click(); }
+      if (key === "ArrowLeft" || key === "MediaRewind") document.getElementById("back").click();
+      if (key === "ArrowRight" || key === "MediaFastForward") document.getElementById("fwd").click();
+      if (key === "MediaPlayPause") document.getElementById("play").click();
+    });
+    setInterval(() => { poll().catch(() => {}); if (!video.hidden) report(); }, 1000);
+    poll().catch(() => {});
+  </script>
+</body>
+</html>`;
+}
+
 function dashboardHtml() {
   const code = Date.now() > state.codeExpires ? (rotateCode(), state.code) : state.code;
   const mins = Math.max(1, Math.round((state.codeExpires - Date.now()) / 60000));
@@ -297,7 +436,7 @@ function dashboardHtml() {
 <body>
   <header>
     <div class="brand"><img src="/icon.png" alt="" />CINEVO NODE</div>
-    <small>${escapeHtml(state.config.deviceId)} · v${VERSION} · 127.0.0.1:${PORT}</small>
+    <small>${escapeHtml(state.config.deviceId)} · v${VERSION} · ${escapeHtml(HOST)}:${PORT}</small>
   </header>
   <main>
     <p>PRIVATE COMPANION</p>
@@ -309,7 +448,13 @@ function dashboardHtml() {
       <p>Enter this in CINEVO on the same computer. Credentials for Plex or Jellyfin stay here.</p>
       <div class="row">
         <form method="post" action="/v1/code/rotate"><button class="ghost" type="submit">New code</button></form>
+        <a href="/receiver"><button class="ghost" type="button">Open receiver</button></a>
       </div>
+    </div>
+    <div class="card">
+      <label>CAST CODE</label>
+      <div class="code">${escapeHtml(ensureCastCode())}</div>
+      <p>Phones and the Android TV app use this code to cast and to remote-control the receiver. It lasts 12 hours. Do not share it off your home network.</p>
     </div>
     <div class="card">
       <label>CONNECTED SERVERS</label>
@@ -392,9 +537,53 @@ function prettyName(fileName) {
   return stem || fileName;
 }
 
+function findSidecar(filePath) {
+  const dir = path.dirname(filePath);
+  const stem = path.basename(filePath).replace(VIDEO_RE, "");
+  const names = [`${stem}.jpg`, `${stem}.jpeg`, `${stem}.png`, `${stem}.webp`, "poster.jpg", "folder.jpg", "cover.jpg", "poster.png", "folder.png"];
+  for (const name of names) {
+    const candidate = path.join(dir, name);
+    try {
+      const stat = fs.statSync(candidate);
+      if (stat.isFile() && stat.size > 32 && stat.size < 1_500_000) return candidate;
+    } catch {
+      /* missing sidecar */
+    }
+  }
+  return "";
+}
+
+function posterData(filePath, title, year) {
+  const sidecar = findSidecar(filePath);
+  if (sidecar) {
+    const ext = path.extname(sidecar).toLowerCase();
+    const mime = ext === ".png" ? "image/png" : ext === ".webp" ? "image/webp" : "image/jpeg";
+    const bytes = fs.readFileSync(sidecar).toString("base64");
+    return `data:${mime};base64,${bytes}`;
+  }
+  const label = escapeHtml(title).slice(0, 42);
+  const when = escapeHtml(year);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="600" viewBox="0 0 400 600"><rect width="400" height="600" fill="#0b0b0b"/><rect x="18" y="18" width="364" height="564" fill="none" stroke="rgba(255,255,255,0.18)"/><text x="36" y="290" fill="#f4fbff" font-family="Inter,system-ui,sans-serif" font-size="28" font-weight="700">${label}</text><text x="36" y="330" fill="#8aa0c4" font-family="Inter,system-ui,sans-serif" font-size="16">${when}</text><text x="36" y="560" fill="rgba(255,255,255,0.35)" font-family="Inter,system-ui,sans-serif" font-size="12" letter-spacing="2">CINEVO</text></svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
 function yearOf(fileName) {
   const m = /\(?((?:19|20)\d{2})\)?/.exec(fileName);
   return m ? m[1] : "";
+}
+
+function titleFromVideo(file) {
+  const title = prettyName(file.name);
+  const year = yearOf(file.name);
+  return {
+    id: `node-${hashStr(file.path)}`,
+    title,
+    year,
+    kind: "movie",
+    genre: "Home video",
+    path: file.path,
+    poster: posterData(file.path, title, year),
+  };
 }
 
 async function fetchJson(url, headers) {
@@ -698,16 +887,19 @@ async function handle(req, res) {
     state.config.folders = state.config.folders || [];
     state.config.folders.push(folder);
     saveConfig(state.config);
+    const library = files.map((f) => titleFromVideo(f));
+    state.config.library = library.map((item) => ({
+      id: item.id,
+      title: item.title,
+      year: item.year,
+      path: item.path,
+    }));
+    saveConfig(state.config);
     send(res, 200, {
       id: folder.id,
       name,
       count: files.length,
-      titles: files.map((f) => ({
-        id: `node-${hashStr(f.path)}`,
-        title: prettyName(f.name),
-        year: yearOf(f.name),
-        path: f.path,
-      })),
+      titles: library,
     });
     return;
   }
@@ -772,6 +964,113 @@ async function handle(req, res) {
     return;
   }
 
+  if (req.method === "GET" && url.pathname === "/v1/receiver") {
+    const titles = (state.config.library || []).slice(0, 80).map((item) => ({
+      id: item.id,
+      title: item.title,
+      year: item.year || "",
+    }));
+    send(res, 200, { ok: true, now: receiver.now, titles });
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/v1/cast") {
+    let body;
+    try {
+      body = await readBody(req);
+    } catch (e) {
+      send(res, 400, { error: e.message });
+      return;
+    }
+    if (!castMatches(body.code)) {
+      send(res, 401, { error: "That receiver code is not valid." });
+      return;
+    }
+    const type = String(body.type || "");
+    const allowed = ["toggle", "play", "pause", "stop", "seek", "volume", "playTitle"];
+    if (!allowed.includes(type)) {
+      send(res, 400, { error: "Unknown command." });
+      return;
+    }
+    if (receiver.queue.length >= 24) {
+      send(res, 429, { error: "The receiver is busy." });
+      return;
+    }
+    const command = { id: crypto.randomBytes(4).toString("hex"), type };
+    if (type === "seek") {
+      if (body.to !== undefined) command.to = Math.max(0, Math.min(100, Number(body.to) || 0));
+      if (body.by !== undefined) command.by = Math.max(-60, Math.min(60, Number(body.by) || 0));
+    }
+    if (type === "volume") command.value = Math.max(0, Math.min(1, Number(body.value) || 0));
+    if (type === "playTitle") {
+      const item = libraryItem(String(body.titleId || ""));
+      if (!item) {
+        send(res, 404, { error: "That title is not on this server." });
+        return;
+      }
+      command.titleId = item.id;
+      command.title = item.title;
+    }
+    receiver.queue.push(command);
+    send(res, 200, { ok: true });
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/v1/receiver/poll") {
+    if (!castMatches(url.searchParams.get("code"))) {
+      send(res, 401, { error: "That receiver code is not valid." });
+      return;
+    }
+    const commands = receiver.queue.splice(0, receiver.queue.length);
+    send(res, 200, { ok: true, commands, now: receiver.now });
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/v1/receiver/now") {
+    let body;
+    try {
+      body = await readBody(req);
+    } catch (e) {
+      send(res, 400, { error: e.message });
+      return;
+    }
+    if (!castMatches(body.code)) {
+      send(res, 401, { error: "That receiver code is not valid." });
+      return;
+    }
+    const now = body.now && typeof body.now === "object" ? body.now : {};
+    receiver.now = {
+      title: String(now.title || "").slice(0, 120),
+      detail: String(now.detail || "").slice(0, 80),
+      playing: now.playing === true,
+      position: Math.max(0, Math.min(100, Number(now.position) || 0)),
+      volume: Math.max(0, Math.min(1, Number(now.volume) || 1)),
+      titleId: String(now.titleId || "").slice(0, 160),
+    };
+    send(res, 200, { ok: true });
+    return;
+  }
+
+  if ((req.method === "GET" || req.method === "HEAD") && url.pathname === "/v1/receiver/stream") {
+    if (!castMatches(url.searchParams.get("code"))) {
+      send(res, 401, { error: "That receiver code is not valid." });
+      return;
+    }
+    const item = libraryItem(url.searchParams.get("id") || "");
+    if (!item) {
+      send(res, 404, { error: "That title is not on this server." });
+      return;
+    }
+    streamFile(req, res, item.path);
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/receiver") {
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
+    res.end(receiverHtml());
+    return;
+  }
+
   send(res, 404, { error: "Not found" });
 }
 
@@ -794,7 +1093,8 @@ server.listen(PORT, HOST, () => {
   console.log(`CINEVO Node v${VERSION}`);
   console.log(`Loopback dashboard: http://${HOST}:${PORT}`);
   console.log(`Pairing code: ${state.code} (expires in 10 minutes)`);
-  console.log("No remote ingress. Media tokens stay in this process.");
+  console.log(`Cast code: ${ensureCastCode()} (receiver)`);
+  console.log("Receiver: /receiver  · phones can cast and remote-control with the cast code.");
   if (!process.argv.includes("--no-open")) openBrowser(`http://${HOST}:${PORT}`);
 });
 

@@ -8,6 +8,7 @@ import { isLoopbackUrl } from "@/lib/playback-urls";
 import { cn } from "@/lib/utils";
 import { Logo } from "./logo";
 import { ArtworkSync } from "./artwork-sync";
+import { AccountLibraries } from "./account-libraries";
 import { AuthSlot, UsernameGate } from "./account";
 
 const NAV: { id: Room; label: string; icon: typeof Home }[] = [
@@ -243,6 +244,9 @@ export function Shell({
               With {party.with || "someone"} · End
             </button>
           ) : null}
+          <Link to="/remote" className="top-nav__core max-md:hidden">
+            Remote
+          </Link>
           <button type="button" className="top-nav__core max-md:hidden" onClick={() => setCoreOpen(true, coreTab === "ai" ? "libraries" : undefined)}>
             Core
           </button>
@@ -350,6 +354,13 @@ export function Shell({
               >
                 Notices{unread ? ` (${unread})` : ""}
               </button>
+              <Link
+                to="/remote"
+                className="flex h-11 w-full items-center rounded-md px-3 font-ui text-sm font-medium text-cine-muted"
+                onClick={() => setDrawer(false)}
+              >
+                Remote and cast
+              </Link>
             </nav>
             <div className="mt-6">
               <AuthSlot />
@@ -360,6 +371,7 @@ export function Shell({
 
       <main key={room} className={cn("house-main", room !== "stage" && "house-main--page")}>{children}</main>
       <ArtworkSync />
+      <AccountLibraries />
       {overlays}
       <UsernameGate />
     </div>

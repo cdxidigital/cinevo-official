@@ -16,7 +16,9 @@ import { Route as HelpRouteImport } from './routes/help'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as NodeRouteImport } from './routes/node'
 import { Route as RemoteRouteImport } from './routes/remote'
+import { Route as TvRouteImport } from './routes/tv'
 import { Route as ApiIosProfileRouteImport } from './routes/api/ios-profile'
+import { Route as ApiPasskeyRouteImport } from './routes/api/passkey'
 import { Route as ApiRemoteRouteImport } from './routes/api/remote'
 import { Route as LegalPrivacyRouteImport } from './routes/legal.privacy'
 import { Route as LegalTermsRouteImport } from './routes/legal.terms'
@@ -60,9 +62,19 @@ const RemoteRoute = RemoteRouteImport.update({
   path: '/remote',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TvRoute = TvRouteImport.update({
+  id: '/tv',
+  path: '/tv',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiIosProfileRoute = ApiIosProfileRouteImport.update({
   id: '/api/ios-profile',
   path: '/api/ios-profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPasskeyRoute = ApiPasskeyRouteImport.update({
+  id: '/api/passkey',
+  path: '/api/passkey',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiRemoteRoute = ApiRemoteRouteImport.update({
@@ -109,7 +121,9 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/node': typeof NodeRoute
   '/remote': typeof RemoteRoute
+  '/tv': typeof TvRoute
   '/api/ios-profile': typeof ApiIosProfileRoute
+  '/api/passkey': typeof ApiPasskeyRoute
   '/api/remote': typeof ApiRemoteRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
@@ -126,7 +140,9 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/node': typeof NodeRoute
   '/remote': typeof RemoteRoute
+  '/tv': typeof TvRoute
   '/api/ios-profile': typeof ApiIosProfileRoute
+  '/api/passkey': typeof ApiPasskeyRoute
   '/api/remote': typeof ApiRemoteRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
@@ -144,7 +160,9 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/node': typeof NodeRoute
   '/remote': typeof RemoteRoute
+  '/tv': typeof TvRoute
   '/api/ios-profile': typeof ApiIosProfileRoute
+  '/api/passkey': typeof ApiPasskeyRoute
   '/api/remote': typeof ApiRemoteRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
@@ -163,7 +181,9 @@ export interface FileRouteTypes {
     | '/login'
     | '/node'
     | '/remote'
+    | '/tv'
     | '/api/ios-profile'
+    | '/api/passkey'
     | '/api/remote'
     | '/legal/privacy'
     | '/legal/terms'
@@ -180,7 +200,9 @@ export interface FileRouteTypes {
     | '/login'
     | '/node'
     | '/remote'
+    | '/tv'
     | '/api/ios-profile'
+    | '/api/passkey'
     | '/api/remote'
     | '/legal/privacy'
     | '/legal/terms'
@@ -197,7 +219,9 @@ export interface FileRouteTypes {
     | '/login'
     | '/node'
     | '/remote'
+    | '/tv'
     | '/api/ios-profile'
+    | '/api/passkey'
     | '/api/remote'
     | '/legal/privacy'
     | '/legal/terms'
@@ -215,7 +239,9 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   NodeRoute: typeof NodeRoute
   RemoteRoute: typeof RemoteRoute
+  TvRoute: typeof TvRoute
   ApiIosProfileRoute: typeof ApiIosProfileRoute
+  ApiPasskeyRoute: typeof ApiPasskeyRoute
   ApiRemoteRoute: typeof ApiRemoteRoute
   LegalPrivacyRoute: typeof LegalPrivacyRoute
   LegalTermsRoute: typeof LegalTermsRoute
@@ -276,11 +302,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RemoteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tv': {
+      id: '/tv'
+      path: '/tv'
+      fullPath: '/tv'
+      preLoaderRoute: typeof TvRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/ios-profile': {
       id: '/api/ios-profile'
       path: '/api/ios-profile'
       fullPath: '/api/ios-profile'
       preLoaderRoute: typeof ApiIosProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/passkey': {
+      id: '/api/passkey'
+      path: '/api/passkey'
+      fullPath: '/api/passkey'
+      preLoaderRoute: typeof ApiPasskeyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/remote': {
@@ -343,7 +383,9 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   NodeRoute: NodeRoute,
   RemoteRoute: RemoteRoute,
+  TvRoute: TvRoute,
   ApiIosProfileRoute: ApiIosProfileRoute,
+  ApiPasskeyRoute: ApiPasskeyRoute,
   ApiRemoteRoute: ApiRemoteRoute,
   LegalPrivacyRoute: LegalPrivacyRoute,
   LegalTermsRoute: LegalTermsRoute,

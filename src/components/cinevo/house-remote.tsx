@@ -117,14 +117,14 @@ export function InstallCinevo({ compact = false }: { compact?: boolean }) {
 
   return (
     <div className={compact ? "install-note" : "tool-card remote-card"}>
-      {!compact ? <p className="font-ui text-xs font-semibold tracking-[0.12em] text-cine-cyan">MOBILE APP</p> : null}
-      {!compact ? <h2>Add CINEVO to this phone</h2> : null}
+      {!compact ? <p className="font-ui text-xs font-semibold tracking-[0.12em] text-cine-cyan">THE PLAYER</p> : null}
+      {!compact ? <h2>Install CINEVO</h2> : null}
       <p>
         {ios
-          ? "In Safari, tap Share, then Add to Home Screen. On the newest iOS, tap the puzzle icon in the bar first, then Share. Or install the CINEVO profile below."
+          ? "In Safari, tap Share, then Add to Home Screen. On the newest iOS, tap the puzzle icon in the bar first, then Share. Or install the CINEVO profile."
           : ready
-            ? "Install the house on this device. It uses the same sign-in and the library you already imported."
-            : "In Chrome or Edge, use the browser menu and choose Install app. Android can also sideload the remote."}
+            ? "One player for this computer, phone, or tablet. It opens your house. The files stay on the server."
+            : "Chrome and Edge can install it from the browser menu. Android can also sideload the APK. iPhone uses the profile."}
       </p>
       {ready ? (
         <button type="button" className="house-btn" onClick={() => void install()}>

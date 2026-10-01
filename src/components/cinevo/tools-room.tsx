@@ -5,6 +5,7 @@ import { clampNumber, duplicateGroups, mostPlayed, peopleIn, renamePreview, tast
 import { useLibrary } from "@/lib/use-library";
 import { BrandKicker } from "./logo";
 import { HouseRemote, InstallCinevo } from "./house-remote";
+import { AddPasskey } from "./passkey-login";
 
 export function ToolsRoom() {
   const library = useLibrary();
@@ -68,6 +69,7 @@ export function ToolsRoom() {
 
       <div className="tools-grid">
       <HouseRemote />
+      <AddPasskey />
       <InstallCinevo />
       <section className="tool-card">
         <h2>Taste in this house</h2>

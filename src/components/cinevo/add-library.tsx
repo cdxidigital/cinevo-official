@@ -108,6 +108,8 @@ export function AddLibrary() {
           synopsis: `Indexed from ${res.name} on CINEVO Node. Playback streams from that computer.`,
           genre: "Home library",
           path: t.path,
+          poster: t.poster,
+          still: t.poster,
         }),
         source: "folder" as const,
         sourceLabel: res.name,

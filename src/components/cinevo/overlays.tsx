@@ -62,6 +62,24 @@ export function Detail() {
               </>
             ) : null}
           </p>
+          <ul className="detail-facts">
+            <li>
+              <span>Kind</span>
+              <b>{title.kind === "series" ? "Series" : "Film"}</b>
+            </li>
+            <li>
+              <span>Length</span>
+              <b>{title.runtime || "—"}</b>
+            </li>
+            <li>
+              <span>Genre</span>
+              <b>{title.genre || "—"}</b>
+            </li>
+            <li>
+              <span>From</span>
+              <b>{title.sourceLabel || "This house"}</b>
+            </li>
+          </ul>
           <div className="house-actions">
             <button type="button" onClick={() => play(title.id)} className="house-btn house-btn--play">
               <Play size={16} fill="currentColor" /> {progress > 0 && progress < 100 ? "Resume" : "Play"}

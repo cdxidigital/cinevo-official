@@ -185,6 +185,7 @@ async function createSql(): Promise<Sql> {
  *
  * Schema comes from `migrations/*.sql`, auto-applied before the first query on
  * both backends — define tables there, never inline in server functions.
+ * New files apply on the next server reload.
  */
 export function getSql(): Promise<Sql> {
   sqlPromise ??= createSql().catch((err) => {

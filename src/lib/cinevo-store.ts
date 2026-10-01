@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { byMood, type Mood, type Title } from "./catalog";
 import type { LibSource, LibraryTitle, ThemeId } from "./library";
-import { THEMES, makePoster } from "./library";
+import { makePoster, migrateTheme } from "./library";
 import type { Collection, Marker, PlayLog, TitlePatch } from "./house-tools";
 import type { PlexServer } from "./plex";
 import {
@@ -97,6 +97,7 @@ type CinevoState = {
   plexToken: string;
   plexUser: string;
   plexServers: PlexServer[];
+  libraryOwner: string;
   sources: LibSource[];
   localTitles: LibraryTitle[];
   remoteTitles: LibraryTitle[];
@@ -184,7 +185,7 @@ const DEFAULT_PREFS: Preferences = {
   zenMode: false,
   focusMode: false,
   audioHints: true,
-  theme: "pulse",
+  theme: "harbor",
   dashboardWidgets: [...DEFAULT_DASHBOARD_WIDGETS],
   introSkip: 0,
   subtitleOffset: 0,
@@ -288,6 +289,7 @@ export const useCinevo = create<CinevoState>()(
       nodeDevice: "",
       plexClientId: "",
       ...FRESH,
+      libraryOwner: "",
       activeSourceId: "all",
       collections: [],
       markers: [],
@@ -646,7 +648,7 @@ export const useCinevo = create<CinevoState>()(
       skipHydration: true,
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<CinevoState>;
-        const theme = p.prefs?.theme && THEMES.some((t) => t.id === p.prefs?.theme) ? p.prefs.theme : "pulse";
+        const theme = migrateTheme(p.prefs?.theme);
         return {
           ...current,
           ...p,
@@ -661,6 +663,7 @@ export const useCinevo = create<CinevoState>()(
           plexToken: p.plexToken ?? "",
           plexUser: p.plexUser ?? "",
           plexServers: Array.isArray(p.plexServers) ? p.plexServers : [],
+          libraryOwner: typeof p.libraryOwner === "string" ? p.libraryOwner : "",
           sources: Array.isArray(p.sources) ? p.sources : [],
           invites: hydrateInvites(p.invites),
           notices: Array.isArray(p.notices) ? p.notices : [],
@@ -728,6 +731,7 @@ export const useCinevo = create<CinevoState>()(
         plexToken: s.plexToken,
         plexUser: s.plexUser,
         plexServers: s.plexServers,
+        libraryOwner: s.libraryOwner,
         sources: s.sources,
         localTitles: s.localTitles.map((t) => ({
           ...t,
